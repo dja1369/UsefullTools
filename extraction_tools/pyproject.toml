@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "extration_tools"
+version = "0.1.0"
+description = "this project is migration for data from any to where!"
+authors = ["LDS <qjxlftn@gmail.com>"]
+readme = "README.md"
+packages = [{include = "extraction_tools", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sqlmodel = "^0.0.21"
+pymysql = "^1.1.1"
+paramiko = "^3.4.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
