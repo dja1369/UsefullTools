@@ -7,7 +7,6 @@ from extraction_tools.src.extraction_tools.util.extraction_util import DataExtra
 
 def constructor():
     '''
-    :return: DateUtil, ORM, SSHClient, DirectoryUtil
     @return: DateUtil, ORM, SSHClient, DataExtractionUtil, DirectoryUtil
     DateUtil: 입력한 날짜 사이의 모든 기간을 반환하는 클래스
     ORM: 데이터베이스와 연결하는 클래스
@@ -15,16 +14,16 @@ def constructor():
     DataExtractionUtil: 파일 추출 지원,
     DirectoryUtil: 파일 다운로드, 삭제, 목표 파일 탐색 지원
     '''
-    hostname, username, password = None, None, None
-    db_user, db_password, db_name, port = None, None, None, None
+    host_ip, host_name, host_password = None, None, None
+    db_user, db_password, db_name, db_port = None, None, None, None
 
     date_util = DateUtil()
 
     orm = ORM(
-        host=hostname, db_user=db_user, db_password=db_password, port=port,db_name=db_name
+        host=host_ip, db_user=db_user, db_password=db_password, port=db_port,db_name=db_name
     )
 
-    client = SSHClient(hostname, username, password)
+    client = SSHClient(host_ip, host_name, host_password)
 
     data_util = DataExtractionUtil()
     directory_util = DirectoryUtil()
