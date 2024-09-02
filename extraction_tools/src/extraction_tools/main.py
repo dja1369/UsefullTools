@@ -17,9 +17,18 @@ def constructor():
     '''
     hostname, username, password = None, None, None
     db_user, db_password, db_name, port = None, None, None, None
-    return DateUtil(), ORM(
+
+    date_util = DateUtil()
+
+    orm = ORM(
         host=hostname, db_user=db_user, db_password=db_password, port=port,db_name=db_name
-    ), SSHClient(hostname, username, password), DataExtractionUtil(), DirectoryUtil()
+    )
+
+    client = SSHClient(hostname, username, password)
+
+    data_util = DataExtractionUtil()
+    directory_util = DirectoryUtil()
+    return date_util, orm, client, data_util, directory_util
 
 date_util, orm, client, data_util ,directory_util = constructor()
 def main():
