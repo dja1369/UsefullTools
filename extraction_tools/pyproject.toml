@@ -11,6 +11,7 @@ python = "^3.11"
 sqlmodel = "^0.0.21"
 pymysql = "^1.1.1"
 paramiko = "^3.4.1"
+sqlalchemy = "^2.0.32"
 
 
 [build-system]

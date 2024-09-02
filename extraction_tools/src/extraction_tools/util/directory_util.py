@@ -5,10 +5,9 @@ class DirectoryUtil:
     def __init__(self):
         self.target_container = set()
 
-    def directory_exists(self, directory):
+    def make_directory_if_not_exists(self, directory):
         if not os.path.exists(directory):
-            os.makedirs(directory + "/top", exist_ok=True)
-            os.makedirs(directory + "/side", exist_ok=True)
+            os.makedirs(directory, exist_ok=True)
 
     def end_file(self, path):
         filename = path + "/end"

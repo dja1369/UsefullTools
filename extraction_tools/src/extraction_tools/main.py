@@ -1,8 +1,11 @@
-from extraction_tools.src.extraction_tools.client.ssh_client import SSHClient
-from extraction_tools.src.extraction_tools.infra.orm import ORM
-from extraction_tools.src.extraction_tools.util.date_util import DateUtil
-from extraction_tools.src.extraction_tools.util.directory_util import DirectoryUtil
-from extraction_tools.src.extraction_tools.util.extraction_util import DataExtractionUtil
+import asyncio
+from datetime import datetime
+
+from src.extraction_tools.client.ssh_client import SSHClient
+from src.extraction_tools.infra.orm import ORM
+from src.extraction_tools.util.date_util import DateUtil
+from src.extraction_tools.util.directory_util import DirectoryUtil
+from src.extraction_tools.util.extraction_util import DataExtractionUtil
 
 
 def constructor():
@@ -20,7 +23,7 @@ def constructor():
     date_util = DateUtil()
 
     orm = ORM(
-        host=host_ip, db_user=db_user, db_password=db_password, port=db_port,db_name=db_name
+        host=host_ip, db_user=db_user, db_password=db_password, port=db_port, db_name=db_name
     )
 
     client = SSHClient(host_ip, host_name, host_password)
@@ -40,4 +43,26 @@ def main():
     5. 필요에 따라 파일 추출
     6. 데이터 업로드
     """
+    target_date = date_util.search_all_date(datetime(None, None, None), datetime(None, None, None))
+    img_group = {}
+    for day in target_date['2024-8']:
+        issue = orm.get_issue_id_and_created_time(day)
+        img_group.setdefault(day, issue)
+    for k,v in img_group.items():
+        if v:
+            local_path = f"input_download_path!"
+            directory_util.make_directory_if_not_exists(local_path)
+            for issue_code, created_at in v:
+                for position in "if you have multiple depth?":
+                    remote_path = f"input_download_remote_path!"
+                    download_path = f"input_download_local_path!"
+                    resp = asyncio.run(client.download(remote_path, download_path))
+                    print("Downloaded InProgress")
+                    if not resp:
+                        print(f"Failed to download {remote_path}")
+                        continue
+
+
+if __name__ == '__main__':
+    main()
 

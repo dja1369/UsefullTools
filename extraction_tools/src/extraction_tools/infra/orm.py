@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import between
 from sqlmodel import create_engine, Session, select
-from seed_idc_2_nas.infra.schema import Issue
+
+from src.extraction_tools.infra.schema import Issue
+
 
 class ORM:
     def __init__(self, host:str, db_user: str, db_password: str, port: int, db_name: str):
