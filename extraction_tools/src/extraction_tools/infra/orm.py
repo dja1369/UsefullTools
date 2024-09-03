@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 from sqlalchemy import between
 from sqlmodel import create_engine, Session, select
@@ -13,17 +13,32 @@ class ORM:
             # echo=True,
         )
 
-    def get_issue_id_and_created_time(self, day: datetime):
+
+    def get_package_data_by_created_ay_range(self, day: datetime):
         with (Session(self._engine) as session):
             q = select(
                 Issue.issue_code, Issue.created_at
             ).where(
+                Issue.is_package == 0,
                 between(
                     Issue.created_at,
-                    day , day + timedelta(minutes=1440)
+                    day, day + timedelta(minutes=1440)
                 )
+            ).order_by(Issue.created_at)
+
+            issue = session.exec(q).fetchall()
+            return issue
+    def get_all_sample_data(self, day: datetime):
+        with (Session(self._engine) as session):
+            q = select(Issue.issue_code, Issue.created_at
+           ).where(
+                between(
+                    Issue.created_at,
+                    day, day + timedelta(minutes=1440)
+                )
+            ).where(
+                Issue.is_package == 1
             ).order_by(Issue.created_at)
             issue = session.exec(q).fetchall()
             return issue
-
 

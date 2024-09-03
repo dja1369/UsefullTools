@@ -33,7 +33,7 @@ def constructor():
     return date_util, orm, client, data_util, directory_util
 
 date_util, orm, client, data_util ,directory_util = constructor()
-def main():
+async def download_and_upload_images():
     """
     WorkFlow:
     1. 추출을 원하는 날짜 반환
@@ -43,26 +43,61 @@ def main():
     5. 필요에 따라 파일 추출
     6. 데이터 업로드
     """
-    target_date = date_util.search_all_date(datetime(None, None, None), datetime(None, None, None))
+    target_date = date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
+    await asyncio.gather(
+        package_images(target_date), sample_images(target_date)
+    )
+
+async def package_images(target_date: dict):
     img_group = {}
-    for day in target_date['2024-8']:
-        issue = orm.get_issue_id_and_created_time(day)
-        img_group.setdefault(day, issue)
-    for k,v in img_group.items():
+    for key in target_date:
+        for day in target_date[key]:
+            issue = orm.get_package_data_by_created_ay_range(day)
+            img_group.setdefault(day, issue)
+
+    coroutine_arr = []
+    for k, v in img_group.items():
         if v:
-            local_path = f"input_download_path!"
+            local_path = f"input"
             directory_util.make_directory_if_not_exists(local_path)
             for issue_code, created_at in v:
-                for position in "if you have multiple depth?":
-                    remote_path = f"input_download_remote_path!"
-                    download_path = f"input_download_local_path!"
-                    resp = asyncio.run(client.download(remote_path, download_path))
-                    print("Downloaded InProgress")
-                    if not resp:
-                        print(f"Failed to download {remote_path}")
-                        continue
+                for position in "condition", "condition":
+                    remote_path = f"input"
+                    download_path = f"input"
+                    coroutine_arr.append(client.download(remote_path, download_path))
+
+    results = await asyncio.gather(*coroutine_arr)
+    for result in results:
+        if not result:
+            print(f"Package Failed to download {result}")
+            continue
+
+
+async def sample_images(target_date: dict):
+    img_group = {}
+    for key in target_date:
+        for day in target_date[key]:
+            issue = orm.get_all_sample_data(day)
+            img_group.setdefault(day, issue)
+
+    coroutine_arr = []
+    for k, v in img_group.items():
+        if v:
+            local_path = f"input"
+            directory_util.make_directory_if_not_exists(local_path)
+            for issue_code, created_at in v:
+                for position in "condition", "condition":
+                    remote_path = f"input"
+                    download_path = f"input"
+                    coroutine_arr.append(client.download(remote_path, download_path))
+
+    results = await asyncio.gather(*coroutine_arr)
+    for result in results:
+        if not result:
+            print(f"Package Failed to download {result}")
+            continue
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(download_and_upload_images())
 

@@ -9,12 +9,12 @@ class SSHClient:
         self._connect(host, username, password)
         self._sftp = self._client.open_sftp()
 
-    def _connect(self, host: str, username: str, password: str):
+    def _connect(self, host_ip: str, host_name: str, password: str):
         try:
-            self._client.connect(hostname=host, username=username, password=password)
-            print(f"Connected to {host} as {username}")
+            self._client.connect(hostname=host_ip, username=host_name, password=password)
+            print(f"Connected to {host_ip} as {host_name}")
         except Exception as e:
-            print(f"Failed to connect to {host} as {username}")
+            print(f"Failed to connect to {host_ip} as {host_name}")
             print(f"reason {e}")
 
     async def download(self, remote_path: str, local_path: str):
