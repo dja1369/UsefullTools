@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, date
 from sqlalchemy import between
 from sqlmodel import create_engine, Session, select
 
-from src.extraction_tools.infra.schema import Issue
+from src.extraction_tools.infra.schema import Issue, IssueTagMatch
 
 
 class ORM:
@@ -42,3 +42,10 @@ class ORM:
             issue = session.exec(q).fetchall()
             return issue
 
+    def get_barcode_by_issue_code(self, issue_code: str):
+        with (Session(self._engine) as session):
+            q = select(
+                IssueTagMatch.tag_code
+            ).where(IssueTagMatch.issue_code == issue_code)
+            barcode = session.exec(q).one_or_none()
+            return barcode

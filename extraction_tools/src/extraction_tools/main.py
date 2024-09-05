@@ -17,8 +17,8 @@ def constructor():
     DataExtractionUtil: 파일 추출 지원,
     DirectoryUtil: 파일 다운로드, 삭제, 목표 파일 탐색 지원
     '''
-    host_ip, host_name, host_password = None, None, None
-    db_user, db_password, db_name, db_port = None, None, None, None
+    host_ip, host_name, host_password = "101.202.34.105", "deep", "9011plum!#"
+    db_user, db_password, db_name, db_port = "root", "deepnoid", "deepshot20240218", 8888
 
     date_util = DateUtil()
 
@@ -33,6 +33,7 @@ def constructor():
     return date_util, orm, client, data_util, directory_util
 
 date_util, orm, client, data_util ,directory_util = constructor()
+
 async def download_and_upload_images():
     """
     WorkFlow:
@@ -97,7 +98,21 @@ async def sample_images(target_date: dict):
             print(f"Package Failed to download {result}")
             continue
 
+def find_empty_file():
+    resp = []
+    directory_util.find_target_file(f"input")
+    empty_files: set[str] = directory_util.target_container
+    for empty_file in empty_files:
+        target = empty_file.split("\\")[-1].split("_")[0]
+        barcode = orm.get_barcode_by_issue_code(target)
+        if barcode:
+            resp.append(barcode)
+
+    return resp
+
+
 
 if __name__ == '__main__':
-    asyncio.run(download_and_upload_images())
+    print(find_empty_file())
+    # asyncio.run(download_and_upload_images())
 

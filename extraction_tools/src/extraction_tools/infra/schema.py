@@ -24,3 +24,10 @@ class Issue(SQLModel, table=True):
     label_status: Status
     label_status_updated_at: datetime
     updated_at: datetime
+
+class IssueTagMatch(SQLModel, table=True):
+    id: Optional[int] = Field(default=True, primary_key=True)
+    issue_code: str = Field(index=True)
+    tag_code: str = Field(index=True)
+
+
