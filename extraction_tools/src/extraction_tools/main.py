@@ -17,8 +17,8 @@ def constructor():
     DataExtractionUtil: 파일 추출 지원,
     DirectoryUtil: 파일 다운로드, 삭제, 목표 파일 탐색 지원
     '''
-    host_ip, host_name, host_password = "101.202.34.105", "deep", "9011plum!#"
-    db_user, db_password, db_name, db_port = "root", "deepnoid", "deepshot20240218", 8888
+    host_ip, host_name, host_password = None, None, None
+    db_user, db_password, db_name, db_port = None, None, None, None
 
     date_util = DateUtil()
 
