@@ -31,3 +31,9 @@ class IssueTagMatch(SQLModel, table=True):
     tag_code: str = Field(index=True)
 
 
+class Tag(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tag_code: str
+    tag_name: str
+    barcode: str
+    link_barcode: str

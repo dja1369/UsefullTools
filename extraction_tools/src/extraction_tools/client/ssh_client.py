@@ -30,3 +30,12 @@ class SSHClient:
             return True
         except Exception as e:
             return False
+
+    def is_exist(self, path: str):
+        try:
+            self._sftp.stat(path)
+            return True
+        except FileNotFoundError:
+            return False
+        except Exception as e:
+            return False
