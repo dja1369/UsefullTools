@@ -31,6 +31,21 @@ class SSHClient:
         except Exception as e:
             return False
 
+    def check_files_existence(self, merge_rotate_group):
+        # 파일 존재 여부 확인
+        remote_path = f"input"
+        for day, issue_arr in merge_rotate_group.items():
+            for issue in issue_arr:
+                for k, v in issue.items():
+                    for rotate in [0,0,0]:
+                        if rotate not in v:
+                            v[rotate] = [False] * 8
+                            continue
+                        check_file = v[rotate][0]
+                        for position in ["condition", "condition"]:
+                            v[rotate].append(self.is_exist(f"input"))
+        return merge_rotate_group
+
     def is_exist(self, path: str):
         try:
             self._sftp.stat(path)

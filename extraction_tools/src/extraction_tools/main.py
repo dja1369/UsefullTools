@@ -8,7 +8,7 @@ from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.infra.orm import ORM
 from src.extraction_tools.util.date_util import DateUtil
 from src.extraction_tools.util.directory_util import DirectoryUtil
-from src.extraction_tools.util.extraction_util import DataExtractionUtil
+from src.extraction_tools.util.data_extraction_util import DataExtractionUtil
 
 class ExtractionToolApplication:
     def __init__(self,
@@ -36,7 +36,7 @@ class ExtractionToolApplication:
             password=host_information.host_password
         )
         self.date_util = DateUtil()
-        self.extraction_util = DataExtractionUtil()
+        self.data_extraction_util = DataExtractionUtil()
         self.directory_util = DirectoryUtil()
 
 
@@ -113,8 +113,8 @@ class ExtractionToolApplication:
         img_group = self._get_image_group_by_date(target_date, self.db_client.get_all_sample_date_by_issue_tag_match)
         merge_img_and_tag_group = self._merge_images_and_tags(img_group)
         merge_rotate_group = self._merge_rotations(merge_img_and_tag_group)
-        self._check_files_existence(merge_rotate_group)
-        self._save_to_excel(merge_rotate_group)
+        merge_rotate_group = self.ssh_client.check_files_existence(merge_rotate_group)
+        self.data_extraction_util.save_to_excel(merge_rotate_group)
 
     def _merge_images_and_tags(self, img_group):
         # 이슈 와 태그 정보 병합
@@ -123,11 +123,11 @@ class ExtractionToolApplication:
             if v:
                 for obj in v:
                     tag = self.db_client.get_tag_by_tag_code(obj.tag_code)
-                    tag_info = self.get_tag_info(obj, tag)
+                    tag_info = self._get_tag_info(obj, tag)
                     merge_img_and_tag_group.setdefault(k, []).append(tag_info)
         return merge_img_and_tag_group
 
-    def get_tag_info(self, obj, tag):
+    def _get_tag_info(self, obj, tag):
         if not tag:
             return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, "None", "None"]
         if obj.tag_code == tag.tag_code:
@@ -150,42 +150,6 @@ class ExtractionToolApplication:
                 merge_rotate_group.setdefault(k, []).append(temp)
         return merge_rotate_group
 
-    def _check_files_existence(self, merge_rotate_group):
-        # 파일 존재 여부 확인
-        remote_path = f"input"
-        for day, issue_arr in merge_rotate_group.items():
-            for issue in issue_arr:
-                for k, v in issue.items():
-                    for rotate in [0,0,0]:
-                        if rotate not in v:
-                            v[rotate] = [False] * 8
-                            continue
-                        check_file = v[rotate][0]
-                        for position in ["condition", "condition"]:
-                            v[rotate].append(self.ssh_client.is_exist(f"input"))
-
-    def _save_to_excel(self, merge_rotate_group):
-        # 엑셀로 저장
-        result_group = {}
-        count = 0
-        for day, issue_arr in merge_rotate_group.items():
-            for issue in issue_arr:
-                for k, v in issue.items():
-                    result_group[count] = {
-                        "img_name": v[0][0],
-                        "barcode_name": v[0][5],
-                        "0_top": v[0][6],
-                        "0_side": v[0][7],
-                        "45_top": v[45][6],
-                        "45_side": v[45][7],
-                        "90_top": v[90][6],
-                        "90_side": v[90][7],
-                        "created_date": str(v[0][1]).split(" ")[0],
-                        "created_time": str(v[0][1]).split(" ")[1]
-                    }
-                    count += 1
-        df = pd.DataFrame.from_dict(result_group, orient="index")
-        df.to_excel(f"input")
 
 
 if __name__ == '__main__':
