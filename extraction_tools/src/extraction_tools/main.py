@@ -97,6 +97,7 @@ class ExtractionToolApplication:
                 continue
 
     def find_empty_file(self):
+        # 모종의 사고로 유실된 쁘락치 파일 찾기
         resp = []
         self.directory_util.find_target_file(f"input")
         empty_files: set[str] = self.directory_util.target_container
@@ -109,6 +110,7 @@ class ExtractionToolApplication:
         return resp
 
     def find_missing_sample(self):
+        # 유실된 데이터를 찾아서..
         target_date = self.date_util.search_all_date(datetime(2024, 1, 1), datetime(2024, 9, 10))
         img_group = self._get_image_group_by_date(target_date, self.db_client.get_all_sample_date_by_issue_tag_match)
         merge_img_and_tag_group = self._merge_images_and_tags(img_group)
@@ -128,6 +130,7 @@ class ExtractionToolApplication:
         return merge_img_and_tag_group
 
     def _get_tag_info(self, obj, tag):
+        # 태그 조건 확인
         if not tag:
             return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, "None", "None"]
         if obj.tag_code == tag.tag_code:
@@ -155,11 +158,8 @@ class ExtractionToolApplication:
 if __name__ == '__main__':
     host = HostInformation("host_ip", "host_name", "host_password")
     db = DatabaseInformation("db_user", "db_password", "db_name", 0000)
-    service = ExtractionToolApplication(
+    application = ExtractionToolApplication(
         host_information=host,
         db_information=db
     )
-    # find_missing_sample()
-    # print(find_empty_file())
-    # asyncio.run(download_and_upload_images())
 
