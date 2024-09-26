@@ -53,16 +53,20 @@ class ExtractionToolApplication:
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
 
         await asyncio.gather(
-            self.download_package_images(target_date), self.download_sample_images(target_date)
+            self._download_images(
+                target_date,
+                self.db_client.get_package_data_by_created_at_range
+            ),
+            self._download_images(
+                target_date,
+                self.db_client.get_sample_data_by_created_at_range
+                )
         )
 
-    async def download_package_images(self, target_date: dict):
-        img_group = self._get_image_group_by_date(target_date, self.db_client.get_package_data_by_created_at_range)
-        await self.download_images(img_group)
+    async def _download_images(self, target_date: dict, target_image_fetch_func: callable):
+        img_group = self._get_image_group_by_date(target_date, target_image_fetch_func)
+        await self._validate_images(img_group)
 
-    async def download_sample_images(self, target_date: dict):
-        img_group = self._get_image_group_by_date(target_date, self.db_client.get_sample_data_by_created_at_range)
-        await self.download_images(img_group)
 
     def _get_image_group_by_date(self, target_date: dict, data_fetch_func: callable):
         img_group = {}
@@ -73,8 +77,8 @@ class ExtractionToolApplication:
 
         return img_group
 
-    async def download_images(self, img_group: dict):
-        coroutine_arr = []
+    async def _validate_images(self, img_group: dict):
+        coroutines = []
 
         for k, v in img_group.items():
             if v:
@@ -84,9 +88,9 @@ class ExtractionToolApplication:
                     for position in "condition", "condition":
                         remote_path = f"input"
                         download_path = f"input"
-                        coroutine_arr.append(self.ssh_client.download(remote_path, download_path))
+                        coroutines.append(self.ssh_client.download(remote_path, download_path))
 
-        results = await asyncio.gather(*coroutine_arr)
+        results = await asyncio.gather(*coroutines)
         for result in results:
             if not result:
                 print(f"Failed to download {result}")
@@ -107,12 +111,12 @@ class ExtractionToolApplication:
     def find_missing_sample(self):
         target_date = self.date_util.search_all_date(datetime(2024, 1, 1), datetime(2024, 9, 10))
         img_group = self._get_image_group_by_date(target_date, self.db_client.get_all_sample_date_by_issue_tag_match)
-        merge_img_and_tag_group = self.merge_images_and_tags(img_group)
-        merge_rotate_group = self.merge_rotations(merge_img_and_tag_group)
-        self.check_files_existence(merge_rotate_group)
-        self.save_to_excel(merge_rotate_group)
+        merge_img_and_tag_group = self._merge_images_and_tags(img_group)
+        merge_rotate_group = self._merge_rotations(merge_img_and_tag_group)
+        self._check_files_existence(merge_rotate_group)
+        self._save_to_excel(merge_rotate_group)
 
-    def merge_images_and_tags(self, img_group):
+    def _merge_images_and_tags(self, img_group):
         # 이슈 와 태그 정보 병합
         merge_img_and_tag_group = {}
         for k, v in img_group.items():
@@ -133,7 +137,7 @@ class ExtractionToolApplication:
         if obj.tag_code == tag.link_barcode:
             return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, tag.tag_name, tag.link_barcode]
 
-    def merge_rotations(self, merge_img_and_tag_group):
+    def _merge_rotations(self, merge_img_and_tag_group):
         # 이슈와 회전된 이슈 정보 병합
         merge_rotate_group = {}
         for k, v in merge_img_and_tag_group.items():
@@ -146,7 +150,7 @@ class ExtractionToolApplication:
                 merge_rotate_group.setdefault(k, []).append(temp)
         return merge_rotate_group
 
-    def check_files_existence(self, merge_rotate_group):
+    def _check_files_existence(self, merge_rotate_group):
         # 파일 존재 여부 확인
         remote_path = f"input"
         for day, issue_arr in merge_rotate_group.items():
@@ -160,7 +164,7 @@ class ExtractionToolApplication:
                         for position in ["condition", "condition"]:
                             v[rotate].append(self.ssh_client.is_exist(f"input"))
 
-    def save_to_excel(self, merge_rotate_group):
+    def _save_to_excel(self, merge_rotate_group):
         # 엑셀로 저장
         result_group = {}
         count = 0
@@ -184,11 +188,9 @@ class ExtractionToolApplication:
         df.to_excel(f"input")
 
 
-
-
 if __name__ == '__main__':
     host = HostInformation("host_ip", "host_name", "host_password")
-    db = HostInformation("db_user", "db_password", "db_name", 0000)
+    db = DatabaseInformation("db_user", "db_password", "db_name", 0000)
     service = ExtractionToolApplication(
         host_information=host,
         db_information=db

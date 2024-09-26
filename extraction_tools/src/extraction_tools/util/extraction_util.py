@@ -12,6 +12,6 @@ class DataExtractionUtil:
     def extract_file(self, target: str, destination: str, new_name: str, position: str):
         shutil.move(f"{target}/color.jpg", f"{destination}/{new_name}_{position}_color.jpg")
 
-
+    def
 
 
