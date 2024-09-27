@@ -24,7 +24,7 @@ class ExtractionToolApplication:
         '''
 
         self.db_client = ORM(
-            host=host_information.host_ip,
+            host=db_information.host_ip,
             db_user=db_information.db_user,
             db_password=db_information.db_password,
             port=db_information.db_port,
@@ -157,8 +157,8 @@ class ExtractionToolApplication:
 
 if __name__ == '__main__':
     host = HostInformation("host_ip", "host_name", "host_password")
-    db = DatabaseInformation("db_user", "db_password", "db_name", 0000)
-    application = ExtractionToolApplication(
+    db = DatabaseInformation("localhost", "Noen", "db_password", "db_name", 0000)
+    application = ExtractionToolApplication(
         host_information=host,
         db_information=db
     )
