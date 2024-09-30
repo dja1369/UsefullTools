@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, date
 
-from sqlalchemy import between
+from sqlalchemy import between, func, ScalarResult, Transaction
 from sqlmodel import create_engine, Session, select
 
-from src.extraction_tools.infra.schema import Issue, IssueTagMatch, Tag
+from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull
+
 
 class ORM:
     def __init__(self, host:str, db_user: str, db_password: str, port: int, db_name: str):
@@ -12,6 +13,16 @@ class ORM:
             # echo=True,
         )
 
+    def save(self, obj: list[object] | object):
+        with Session(self._engine) as session:
+            if isinstance(obj, list):
+                session.add_all(obj)
+            else:
+                session.add(obj)
+            session.commit()
+
+    def is_exist_issue_tag_match(self):
+        pass
 
     def get_package_data_by_created_at_range(self, day: datetime):
         with (Session(self._engine) as session):
@@ -80,11 +91,11 @@ class ORM:
     def get_tag_by_tag_code(self, tag_code: str):
         with (Session(self._engine) as session):
             q = select(
-                Tag.tag_name, Tag.tag_code, Tag.barcode, Tag.link_barcode
+                TagLite.tag_name, TagLite.tag_code, TagLite.barcode, TagLite.link_barcode
             ).where(
-                (Tag.tag_code == tag_code) |
-                (Tag.barcode == tag_code) |
-                (Tag.link_barcode == tag_code)
+                (TagLite.tag_code == tag_code) |
+                (TagLite.barcode == tag_code) |
+                (TagLite.link_barcode == tag_code)
             )
             try: # tag_code가 여러개인 케이스가 존재하면 안되는데 존재함.
                 tag = session.exec(q).one_or_none()
@@ -93,4 +104,36 @@ class ORM:
                 tag = tag[-1]
             return tag
 
+    def get_all_issue_count(self):
+        with Session(self._engine) as session:
+            q = select(func.count()).select_from(Issue)
+            count= session.exec(q)
+            return count.fetchall()[0]
 
+    def get_issue_by_id(self, id: int):
+        with Session(self._engine) as session:
+            q = select(Issue).limit(1).offset(id)
+            result = session.exec(q).one_or_none()
+            return result
+
+    def get_issue_tag_match_by_issue_code(self, issue_code: str):
+        with Session(self._engine) as session:
+            q = select(IssueTagMatch).where(IssueTagMatch.issue_code == issue_code)
+            result = session.exec(q).fetchall()
+            return result
+
+    def get_tag_by_tag_code_or_barcode_or_link_barcode(self, tag_code: str):
+        with Session(self._engine) as session:
+            q = select(TagFull).where(
+                (TagFull.tag_code == tag_code) |
+                (TagFull.barcode == tag_code) |
+                (TagFull.link_barcode == tag_code)
+            )
+            # print(tag_code)
+            result = session.exec(q).fetchall()
+            # print(result)
+            # result = session.exec(q).one_or_none()
+            if result:
+                return result[-1]
+            else:
+                return None

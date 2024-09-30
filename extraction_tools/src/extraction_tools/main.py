@@ -1,19 +1,18 @@
 import asyncio
 from datetime import datetime
 
-import pandas as pd
-
 from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation
 from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.infra.orm import ORM
+from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagFull, TagMigration, IssueTagMatchMigration
 from src.extraction_tools.util.date_util import DateUtil
 from src.extraction_tools.util.directory_util import DirectoryUtil
-from src.extraction_tools.util.data_extraction_util import DataExtractionUtil
+from src.extraction_tools.util.data_handling_util import DataHandlingUtil
 
 class ExtractionToolApplication:
     def __init__(self,
-                 host_information: HostInformation,
-                 db_information: DatabaseInformation
+                 db_client: ORM,
+                 ssh_client: SSHClient,
                  ):
         '''
         DBClient: 데이터베이스와 연결하는 클래스,
@@ -23,20 +22,10 @@ class ExtractionToolApplication:
         DirectoryUtil: 파일 다운로드, 삭제, 목표 파일 탐색 지원
         '''
 
-        self.db_client = ORM(
-            host=db_information.host_ip,
-            db_user=db_information.db_user,
-            db_password=db_information.db_password,
-            port=db_information.db_port,
-            db_name=db_information.db_name
-        )
-        self.ssh_client = SSHClient(
-            host=host_information.host_ip,
-            username=host_information.host_name,
-            password=host_information.host_password
-        )
+        self.db_client = db_client
+        self.ssh_client = ssh_client
         self.date_util = DateUtil()
-        self.data_extraction_util = DataExtractionUtil()
+        self.data_handling_util = DataHandlingUtil()
         self.directory_util = DirectoryUtil()
 
 
@@ -116,7 +105,7 @@ class ExtractionToolApplication:
         merge_img_and_tag_group = self._merge_images_and_tags(img_group)
         merge_rotate_group = self._merge_rotations(merge_img_and_tag_group)
         merge_rotate_group = self.ssh_client.check_files_existence(merge_rotate_group)
-        self.data_extraction_util.save_to_excel(merge_rotate_group)
+        self.data_handling_util.save_to_excel(merge_rotate_group)
 
     def _merge_images_and_tags(self, img_group):
         # 이슈 와 태그 정보 병합
@@ -153,13 +142,97 @@ class ExtractionToolApplication:
                 merge_rotate_group.setdefault(k, []).append(temp)
         return merge_rotate_group
 
+    def db_migration(self):
+        #   전체 이슈 데이터를 가져와서 이슈 태그 매치와 태그 데이터를 마이그레이션
+        #   매치가 되지않는 없는 데이터의 경우 제외
+        #   전체 이슈 갯수 가져오기
+        total_issue_count = self.db_client.get_all_issue_count()
+        for i in range(total_issue_count):
+            #   이슈 데이터 가져오기
+            issue: Issue = self.db_client.get_issue_by_id(id=i)
+            if not issue:
+                continue
+            #   이슈 태그 매치 데이터 가져오기
+            issue_tag_matchs: list[IssueTagMatch] = self.db_client.get_issue_tag_match_by_issue_code(issue.issue_code)
+            if not issue_tag_matchs:
+                continue
+            itms: list[IssueTagMatch] = []
+            tags: list[TagFull] = []
+            for itm in issue_tag_matchs:
+                tag = self.db_client.get_tag_by_tag_code_or_barcode_or_link_barcode(itm.tag_code)
+                if not tag:
+                    continue
+                migration_entity: TagFull = self.data_handling_util.migration_tag_entity(tag)
+                if migration_entity:    # 데이터가 존재하는 케이스만 마이그레이션 대상.
+                    itms.append(itm)
+                    tags.append(migration_entity)
+
+            migration_issue_tag_match, migration_tag = [], []
+
+            for n_itm, n_tag in zip(itms, tags):
+                migration_issue_tag_match.append(
+                    IssueTagMatchMigration(
+                        id=None,
+                        issue_code=n_itm.issue_code,
+                        tag_code=n_tag.tag_code,
+                    )
+                )
+                migration_tag.append(
+                    TagMigration(
+                        id=None,
+                        tag_code=n_tag.tag_code,
+                        tag_name=n_tag.tag_name,
+                        description=n_tag.description,
+                        barcode=n_tag.barcode,
+                        link_barcode=n_tag.link_barcode,
+                        tag_type=n_tag.tag_type,
+                        obj_type=n_tag.obj_type,
+                        battery_code=n_tag.battery_code,
+                        created_at=n_tag.created_at,
+                        updated_at=n_tag.updated_at
+                    )
+                )
+
+            self.db_client.save(migration_issue_tag_match) # save to Issue Tag Match Entity
+            #   Tag는 바코드가 고유키라서 중복되면 안되는데 중복되는 케이스가 존재함.
+            #   아오 어떡해 ㅋㅋ
+
+            self.db_client.save(migration_tag) # save to Migration Tag Entity
+
+        print("Done!")
+
 
 
 if __name__ == '__main__':
-    host = HostInformation("host_ip", "host_name", "host_password")
-    db = DatabaseInformation("localhost", "Noen", "db_password", "db_name", 0000)
-    application = ExtractionToolApplication(
-        host_information=host,
-        db_information=db
+    remote_host = HostInformation(
+        ip="host_ip",
+        name="host_name",
+        password="host_password"
     )
+    ssh = SSHClient(
+        host=remote_host.ip,
+        username=remote_host.name,
+        password=remote_host.password
+    )
+
+    db_information = DatabaseInformation(
+        host_ip="localhost",
+        user="ha..",
+        password="ha..",
+        db_name="ha..",
+        port="ha..")
+
+    db = ORM(
+        host=db_information.host_ip,
+        db_user=db_information.user,
+        db_password=db_information.password,
+        db_name=db_information.db_name,
+        port=db_information.port,
+    )
+    application = ExtractionToolApplication(
+        ssh_client=ssh,
+        db_client=db
+    )
+    application.db_migration()
+
 

@@ -4,11 +4,32 @@ import shutil
 
 import pandas as pd
 
+from src.extraction_tools.infra.schema import TagFull
 
-class DataExtractionUtil:
-    def extract_date(self, path):
+
+class DataHandlingUtil:
+    def extract_date(self, path: str):
         pattern = re.compile(r"\d{4}/\d{1,2}/\d{1,2}")
         return pattern.search(path).group()
+
+    def migration_tag_entity(self, tag: TagFull):
+        # A-Z까지1,2개 - 숫자 2개 - 숫자 4개 형식 찾는 정규 표현식
+        pattern = re.compile(r"^[A-Z]{1,4}-\d{2}-\d{4}$")
+        # for attr, value in tag.__dict__.items():
+        for attr, value in tag:
+            if isinstance(value, str) and pattern.match(value):
+               return TagFull(
+                   tag_code=value,
+                   tag_name=tag.tag_name,
+                   description=tag.description,
+                   barcode=value,
+                   link_barcode=None,
+                   tag_type=value.split("-")[0],
+                   obj_type=tag.obj_type,
+                   battery_code=tag.battery_code,
+                   created_at=tag.created_at,
+                   updated_at=tag.updated_at
+               )
 
     def extract_file(self, target: str, destination: str, new_name: str, position: str):
         shutil.move(f"{target}/color.jpg", f"{destination}/{new_name}_{position}_color.jpg")

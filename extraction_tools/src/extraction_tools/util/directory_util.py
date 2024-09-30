@@ -55,6 +55,3 @@ class DirectoryUtil:
         def condition_func(full_path):
             return os.path.isdir(full_path) and "end" in os.listdir(full_path)
         self._traverse_directory(in_path, condition_func)
-
-
-

@@ -7,7 +7,11 @@ class SSHClient:
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         self._connect(host, username, password)
-        self._sftp = self._client.open_sftp()
+        try:
+            self._sftp = self._client.open_sftp()
+        except Exception as e:
+            print(f"Failed to open sftp")
+            print(f"reason {e}")
 
     def _connect(self, host_ip: str, host_name: str, password: str):
         try:
