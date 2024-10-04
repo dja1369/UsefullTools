@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, date
 
-from sqlalchemy import between, func, ScalarResult, Transaction
+from sqlalchemy import between, func, ScalarResult, Transaction, exists
 from sqlmodel import create_engine, Session, select
 
-from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull
+from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration
 
 
 class ORM:
@@ -21,8 +21,21 @@ class ORM:
                 session.add(obj)
             session.commit()
 
-    def is_exist_issue_tag_match(self):
-        pass
+    def is_exist_migration_tag(self, tag: TagMigration):
+        with Session(self._engine) as session:
+            q = select(exists().where(TagMigration.tag_code == tag.tag_code))
+            return session.exec(q).one()
+
+    def get_tag_by_description(self, description: str):
+        with Session(self._engine) as session:
+            q = select(TagMigration).where(TagMigration.description == description)
+            result = session.exec(q).fetchall()
+            if result.__len__() > 2:
+                print('result:', result)
+            if result:
+                return result[-1]
+            else:
+                return None
 
     def get_package_data_by_created_at_range(self, day: datetime):
         with (Session(self._engine) as session):
@@ -38,6 +51,7 @@ class ORM:
 
             issue = session.exec(q).fetchall()
             return issue
+
     def get_sample_data_by_created_at_range(self, day: datetime):
         with (Session(self._engine) as session):
             q = select(Issue.issue_code, Issue.created_at

@@ -4,7 +4,7 @@ import shutil
 
 import pandas as pd
 
-from src.extraction_tools.infra.schema import TagFull
+from src.extraction_tools.infra.schema import TagFull, TagMigration
 
 
 class DataHandlingUtil:
@@ -18,7 +18,7 @@ class DataHandlingUtil:
         # for attr, value in tag.__dict__.items():
         for attr, value in tag:
             if isinstance(value, str) and pattern.match(value):
-               return TagFull(
+               return TagMigration(
                    tag_code=value,
                    tag_name=tag.tag_name,
                    description=tag.description,
