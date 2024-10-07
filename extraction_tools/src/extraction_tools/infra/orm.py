@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, date
 
-from sqlalchemy import between, func, ScalarResult, Transaction, exists
-from sqlmodel import create_engine, Session, select
+from sqlalchemy import between, func, exists
+from sqlmodel import create_engine, Session, select, desc
 
 from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration
 
@@ -143,11 +143,24 @@ class ORM:
                 (TagFull.barcode == tag_code) |
                 (TagFull.link_barcode == tag_code)
             )
-            # print(tag_code)
             result = session.exec(q).fetchall()
-            # print(result)
-            # result = session.exec(q).one_or_none()
             if result:
                 return result[-1]
             else:
                 return None
+
+    def get_issue_by_tag_type(self, tag_type: str):
+        with Session(self._engine) as session:
+            q = select(
+                Issue.issue_code, Issue.created_at
+            ).join(
+                IssueTagMatch, Issue.issue_code == IssueTagMatch.issue_code
+            ).join(
+                TagFull, IssueTagMatch.tag_code == TagFull.tag_code
+            ).where(
+                TagFull.tag_type == tag_type
+            ).order_by(
+                desc(Issue.created_at)
+            )
+            result = session.exec(q).fetchall()
+            return result

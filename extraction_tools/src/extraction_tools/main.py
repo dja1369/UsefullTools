@@ -31,6 +31,30 @@ class ExtractionToolApplication:
         self.data_handling_util = DataHandlingUtil()
         self.directory_util = DirectoryUtil()
 
+    async def find_target_tag_issue(self, target_information: dict[str, int]):
+        #   데이터 있는지 검증하고 있다면 해당 데이터를 가져옴
+        #   다운로드, 업로드를 했다면 count 1 증가
+        #   count가 target_count와 같아지면 종료
+        coroutines = []
+        remote_base_path = "da"
+        local_base_path = "da"
+        for tag_type, target_count in target_information.items():
+            count = 0
+            issues: list[Issue] = self.db_client.get_issue_by_tag_type(tag_type)
+            self.directory_util.make_directory_if_not_exists(local_base_path+"/"+tag_type)
+            for issue in issues:
+                if count == target_count:
+                    break
+                for position in "da", "da":
+                    remote_path = f"{remote_base_path}/{issue.issue_code}/{position}/color.jpg"
+                    local_path = f"{local_base_path}/{tag_type}/{issue.issue_code}_{position}_color.jpg"
+                    if self.ssh_client.is_exist(remote_path):
+                        coroutines.append(self.ssh_client.download(remote_path, local_path))
+                        count += 1
+        #   Download And Upload
+        await asyncio.gather(*coroutines)
+
+
 
     async def download_and_upload_images(self):
         """
@@ -240,7 +264,7 @@ if __name__ == '__main__':
         user="ha",
         password="ha",
         db_name="ha",
-        port=0)
+        port=0000)
 
     db = ORM(
         host=db_information.host_ip,
@@ -253,6 +277,15 @@ if __name__ == '__main__':
         ssh_client=ssh,
         db_client=db
     )
-    application.db_migration()
+    target_info = {
+        "A": 500 ,
+        "C": 900,
+        "D": 850,
+        "E": 1750,
+        "G": 1700,
+        "Q": 250,
+        "N": 50,
+    }
+    application.find_target_tag_issue()
 
 
