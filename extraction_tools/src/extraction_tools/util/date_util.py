@@ -1,9 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from itertools import groupby
 
 
 class DateUtil:
-    def search_all_date(self, start: datetime, end: datetime):
+    def search_all_date(self, start: datetime, end: datetime) -> dict[str, list[date]]:
         """
         입력한 날짜 사이의 모든 기간을 반환
         :return : { "year-month": [date, date, ...], ...}

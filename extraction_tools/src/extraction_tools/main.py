@@ -57,13 +57,13 @@ class ExtractionToolApplication:
 
     async def upload_all_sample_images(self):
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 12, 31))
-        img_group: dict[str, list[IssueTagResult]] = self._get_image_group_by_date(
+        img_group: dict[date, list[IssueTagResult]] = self._get_image_group_by_date(
             target_date,
             self.db_client.get_sample_data_by_created_at_range
         )
         await self._validate_sample_images(img_group)
 
-    async def _validate_sample_images(self, img_group: dict[str, list[IssueTagResult]]):
+    async def _validate_sample_images(self, img_group: dict[date, list[IssueTagResult]]):
         coroutines = []
 
         for k, v in img_group.items():
@@ -91,14 +91,14 @@ class ExtractionToolApplication:
         4. 다운로드 받은 파일을 NAS에 업로드
         """
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
-        img_group: dict[str, list[IssueCodeNTime]] = self._get_image_group_by_date(
+        img_group: dict[date, list[IssueCodeNTime]] = self._get_image_group_by_date(
             target_date,
             self.db_client.get_package_data_by_created_at_range
         )
         await self._validate_package_images(img_group)
 
 
-    def _get_image_group_by_date(self, target_date: dict, data_fetch_func: callable) -> dict[str, list[IssueTagResult | IssueCodeNTime | IssueLinkTagCode]]:
+    def _get_image_group_by_date(self, target_date: dict[str, list[date]], data_fetch_func: callable) -> dict[date, list[IssueTagResult | IssueCodeNTime | IssueLinkTagCode]]:
         img_group = {}
         for key in target_date:
             for day in target_date[key]:
@@ -107,12 +107,13 @@ class ExtractionToolApplication:
 
         return img_group
 
-    async def _validate_package_images(self, img_group: dict[str, list[IssueCodeNTime]]):
+    async def _validate_package_images(self, img_group: dict[date, list[IssueCodeNTime]]):
         coroutines = []
 
         for k, v in img_group.items():
             if not v:
                 continue
+            year, month, day = k.year, k.month, k.day
             self.directory_util.make_directory_if_not_exists(self.upload_path)
             for obj in v:
                 for position in "none", "none":
@@ -139,8 +140,8 @@ class ExtractionToolApplication:
 
     def export_missing_sample(self):
         # 유실된 데이터를 찾아서..
-        target_date: dict[str, date] = self.date_util.search_all_date(datetime(2023, 10, 1), datetime(2024, 10, 10))
-        img_group: dict[str, list[IssueLinkTagCode]] = self._get_image_group_by_date(
+        target_date: dict[str, list[date]] = self.date_util.search_all_date(datetime(2023, 10, 1), datetime(2024, 10, 10))
+        img_group: dict[date, list[IssueLinkTagCode]] = self._get_image_group_by_date(
             target_date,
             self.db_client.get_all_sample_date_by_issue_tag_match
         )
@@ -260,8 +261,9 @@ class ExtractionToolApplication:
             print(f"Exist Tag: {tag.tag_code}")
             self._validation_migration_target(tag, itm, new_number - 1)
 
-
-
+    def test(self):
+        day_range = self.date_util.search_all_date(datetime(2024, 11, 1), datetime(2024, 12, 31))
+        return day_range
 
 if __name__ == '__main__':
     sys.setrecursionlimit(5000)
@@ -295,7 +297,7 @@ if __name__ == '__main__':
         ssh_client=ssh,
         db_client=db
     )
-
+    print(application.test())
 
 
 
