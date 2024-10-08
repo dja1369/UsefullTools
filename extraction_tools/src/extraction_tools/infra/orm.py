@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, date
 from sqlalchemy import between, func, exists
 from sqlmodel import create_engine, Session, select, desc
 
-from src.extraction_tools.dto.Vo import IssueTagResult
+from src.extraction_tools.dto.Vo import IssueTagResult, IssueCodeNTime, IssueLinkTagCode
 from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration
 
 
@@ -38,7 +38,7 @@ class ORM:
             else:
                 return None
 
-    def get_package_data_by_created_at_range(self, day: datetime):
+    def get_package_data_by_created_at_range(self, day: datetime) -> list[IssueCodeNTime]:
         with (Session(self._engine) as session):
             q = select(
                 Issue.issue_code, Issue.created_at
@@ -51,7 +51,11 @@ class ORM:
             ).order_by(Issue.created_at)
 
             issue = session.exec(q).fetchall()
-            return issue
+            issue_code_n_time = [
+                IssueCodeNTime(issue_code=row[0], created_at=row[1])
+                    for row in issue
+            ]
+            return issue_code_n_time
 
     def get_sample_data_by_created_at_range(self, day: datetime) -> list[IssueTagResult]:
         with (Session(self._engine) as session):
@@ -74,7 +78,7 @@ class ORM:
             ]
             return issue_tag_results
 
-    def get_all_sample_date_by_issue_tag_match(self, day: datetime):
+    def get_all_sample_date_by_issue_tag_match(self, day: datetime) -> list[IssueLinkTagCode]:
         with (Session(self._engine) as session):
             q = select(Issue.issue_code, Issue.created_at, Issue.rotate, Issue.package_link,
                        IssueTagMatch.tag_code
@@ -89,7 +93,12 @@ class ORM:
                 Issue.is_package == 1
             ).order_by(Issue.created_at)
             issue = session.exec(q).fetchall()
-            return issue
+            issue_link_tag_codes = [
+                IssueLinkTagCode(
+                    issue_code=row[0], issue_created_at=row[1], rotate=row[2], package_link=row[3], tag_code=row[4]
+                ) for row in issue
+            ]
+            return issue_link_tag_codes
     def get_all_sample_date_by_package_link(self, package_link: str):
         with (Session(self._engine) as session):
             q = select(Issue.issue_code, Issue.created_at, Issue.rotate, Issue.package_link

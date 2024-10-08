@@ -1,10 +1,11 @@
 import asyncio
 import sys
-from datetime import datetime
+from datetime import datetime, date
 
 import sqlalchemy
 
-from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation, IssueTagResult
+from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation, IssueTagResult, IssueCodeNTime, \
+    IssueLinkTagCode
 from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.infra.orm import ORM
 from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagFull, TagMigration, IssueTagMatchMigration
@@ -81,51 +82,39 @@ class ExtractionToolApplication:
         return "Done"
 
 
-    async def download_and_upload_images(self):
+    async def upload_all_package_images(self):
         """
         WorkFlow:
         1. 추출을 원하는 날짜 반환
         2. 해당 날짜에 해당하는 데이터베이스 데이터 반환
         3. 데이터베이스 데이터를 이용하여 파일 다운로드
-        4. 다운로드 받은 파일을 원하는 위치로 이동
-        5. 필요에 따라 파일 추출
-        6. 데이터 업로드
+        4. 다운로드 받은 파일을 NAS에 업로드
         """
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
-        #   요구사항은 변경되기 마련..
-        await asyncio.gather(
-            self._download_images(
-                target_date,
-                self.db_client.get_package_data_by_created_at_range
-            ),
-            self._download_images(
-                target_date,
-                self.db_client.get_sample_data_by_created_at_range
-                )
+        img_group: dict[str, list[IssueCodeNTime]] = self._get_image_group_by_date(
+            target_date,
+            self.db_client.get_package_data_by_created_at_range
         )
-
-    async def _download_images(self, target_date: dict, target_image_fetch_func: callable):
-        img_group = self._get_image_group_by_date(target_date, target_image_fetch_func)
-        await self._validate_images(img_group)
+        await self._validate_package_images(img_group)
 
 
-    def _get_image_group_by_date(self, target_date: dict, data_fetch_func: callable) -> dict[str, list[IssueTagResult | Issue]]:
+    def _get_image_group_by_date(self, target_date: dict, data_fetch_func: callable) -> dict[str, list[IssueTagResult | IssueCodeNTime | IssueLinkTagCode]]:
         img_group = {}
         for key in target_date:
             for day in target_date[key]:
-                issues: list[IssueTagResult | Issue] = data_fetch_func(day)
+                issues: list[IssueTagResult | IssueCodeNTime | IssueLinkTagCode] = data_fetch_func(day)
                 img_group.setdefault(day, issues)
 
         return img_group
 
-    async def _validate_images(self, img_group: dict[str, list[Issue]]):
+    async def _validate_package_images(self, img_group: dict[str, list[IssueCodeNTime]]):
         coroutines = []
 
         for k, v in img_group.items():
             if not v:
                 continue
             self.directory_util.make_directory_if_not_exists(self.upload_path)
-            for issue_code, created_at in v:
+            for obj in v:
                 for position in "none", "none":
                     coroutines.append(self.ssh_client.download(self.download_path, self.upload_path))
 
@@ -148,10 +137,13 @@ class ExtractionToolApplication:
 
         return resp
 
-    def find_missing_sample(self):
+    def export_missing_sample(self):
         # 유실된 데이터를 찾아서..
-        target_date = self.date_util.search_all_date(datetime(2024, 1, 1), datetime(2024, 9, 10))
-        img_group = self._get_image_group_by_date(target_date, self.db_client.get_all_sample_date_by_issue_tag_match)
+        target_date: dict[str, date] = self.date_util.search_all_date(datetime(2023, 10, 1), datetime(2024, 10, 10))
+        img_group: dict[str, list[IssueLinkTagCode]] = self._get_image_group_by_date(
+            target_date,
+            self.db_client.get_all_sample_date_by_issue_tag_match
+        )
         merge_img_and_tag_group = self._merge_images_and_tags(img_group)
         merge_rotate_group = self._merge_rotations(merge_img_and_tag_group)
         merge_rotate_group = self.ssh_client.check_files_existence(merge_rotate_group)
@@ -161,26 +153,28 @@ class ExtractionToolApplication:
         # 이슈 와 태그 정보 병합
         merge_img_and_tag_group = {}
         for k, v in img_group.items():
-            if v:
-                for obj in v:
-                    tag = self.db_client.get_tag_by_tag_code(obj.tag_code)
-                    tag_info = self._get_tag_info(obj, tag)
-                    merge_img_and_tag_group.setdefault(k, []).append(tag_info)
+            if not v:
+                continue
+            for obj in v:
+                tag = self.db_client.get_tag_by_tag_code(obj.tag_code)
+                tag_info = self._get_tag_info(obj, tag)
+                merge_img_and_tag_group.setdefault(k, []).append(tag_info)
         return merge_img_and_tag_group
 
     def _get_tag_info(self, obj, tag):
         # 태그 조건 확인
         if not tag:
-            return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, "None", "None"]
+            return [obj.issue_code, obj.issue_created_at, obj.rotate, obj.package_link, "None", "None"]
         if obj.tag_code == tag.tag_code:
-            return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, tag.tag_name, tag.tag_code]
+            return [obj.issue_code, obj.issue_created_at, obj.rotate, obj.package_link, tag.tag_name, tag.tag_code]
         if obj.tag_code == tag.barcode:
-            return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, tag.tag_name, tag.barcode]
+            return [obj.issue_code, obj.issue_created_at, obj.rotate, obj.package_link, tag.tag_name, tag.barcode]
         if obj.tag_code == tag.link_barcode:
-            return [obj.issue_code, obj.created_at, obj.rotate, obj.package_link, tag.tag_name, tag.link_barcode]
+            return [obj.issue_code, obj.issue_created_at, obj.rotate, obj.package_link, tag.tag_name, tag.link_barcode]
 
     def _merge_rotations(self, merge_img_and_tag_group):
         # 이슈와 회전된 이슈 정보 병합
+        # [obj.issue_code, obj.issue_created_at, obj.rotate, obj.package_link, tag.tag_name, tag.link_barcode]
         merge_rotate_group = {}
         for k, v in merge_img_and_tag_group.items():
             for obj in v:
@@ -283,11 +277,12 @@ if __name__ == '__main__':
     )
 
     db_information = DatabaseInformation(
-        host_ip="localhost",
+        host_ip="ha",
         user="ha",
         password="ha",
         db_name="ha",
-        port=0000)
+        port=0000
+    )
 
     db = ORM(
         host=db_information.host_ip,
