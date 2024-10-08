@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, date
 from sqlalchemy import between, func, exists
 from sqlmodel import create_engine, Session, select, desc
 
+from src.extraction_tools.dto.Vo import IssueTagResult
 from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration
 
 
@@ -52,19 +53,26 @@ class ORM:
             issue = session.exec(q).fetchall()
             return issue
 
-    def get_sample_data_by_created_at_range(self, day: datetime):
+    def get_sample_data_by_created_at_range(self, day: datetime) -> list[IssueTagResult]:
         with (Session(self._engine) as session):
-            q = select(Issue.issue_code, Issue.created_at
-           ).where(
+            q = select(Issue.issue_code, Issue.rotate, IssueTagMatch.tag_code
+           ).join(
+                IssueTagMatch, Issue.issue_code == IssueTagMatch.issue_code
+            ).where(
                 between(
                     Issue.created_at,
                     day, day + timedelta(minutes=1440)
                 )
             ).where(
+                #   is_package [1: sample, 0: package] 반대로 되어있다.
                 Issue.is_package == 1
             ).order_by(Issue.created_at)
             issue = session.exec(q).fetchall()
-            return issue
+            issue_tag_results = [
+                IssueTagResult(issue_code=row[0], rotate=row[1], tag_code=row[2])
+                                 for row in issue
+            ]
+            return issue_tag_results
 
     def get_all_sample_date_by_issue_tag_match(self, day: datetime):
         with (Session(self._engine) as session):

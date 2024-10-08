@@ -4,7 +4,7 @@ from datetime import datetime
 
 import sqlalchemy
 
-from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation
+from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation, IssueTagResult
 from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.infra.orm import ORM
 from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagFull, TagMigration, IssueTagMatchMigration
@@ -24,7 +24,8 @@ class ExtractionToolApplication:
         ExtractionUtil: 파일 추출 지원,
         DirectoryUtil: 파일 다운로드, 삭제, 목표 파일 탐색 지원
         '''
-
+        self.download_path = None
+        self.upload_path = None
         self.db_client = db_client
         self.ssh_client = ssh_client
         self.date_util = DateUtil()
@@ -36,24 +37,48 @@ class ExtractionToolApplication:
         #   다운로드, 업로드를 했다면 count 1 증가
         #   count가 target_count와 같아지면 종료
         coroutines = []
-        remote_base_path = "da"
-        local_base_path = "da"
         for tag_type, target_count in target_information.items():
             count = 0
             issues: list[Issue] = self.db_client.get_issue_by_tag_type(tag_type)
-            self.directory_util.make_directory_if_not_exists(local_base_path+"/"+tag_type)
+            self.directory_util.make_directory_if_not_exists(self.upload_path+"/"+tag_type)
             for issue in issues:
                 if count == target_count:
                     break
                 for position in "da", "da":
-                    remote_path = f"{remote_base_path}/{issue.issue_code}/{position}/color.jpg"
-                    local_path = f"{local_base_path}/{tag_type}/{issue.issue_code}_{position}_color.jpg"
+                    remote_path = f"{self.download_path}/{issue.issue_code}/{position}/color.jpg"
+                    local_path = f"{self.upload_path}/{tag_type}/{issue.issue_code}_{position}_color.jpg"
                     if self.ssh_client.is_exist(remote_path):
                         coroutines.append(self.ssh_client.download(remote_path, local_path))
                         count += 1
         #   Download And Upload
-        await asyncio.gather(*coroutines)
+        result = await asyncio.gather(*coroutines)
+        return result
 
+    async def upload_all_sample_images(self):
+        target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 12, 31))
+        img_group: dict[str, list[IssueTagResult]] = self._get_image_group_by_date(
+            target_date,
+            self.db_client.get_sample_data_by_created_at_range
+        )
+        await self._validate_sample_images(img_group)
+
+    async def _validate_sample_images(self, img_group: dict[str, list[IssueTagResult]]):
+        coroutines = []
+
+        for k, v in img_group.items():
+            if not v:
+                continue
+            self.directory_util.make_directory_if_not_exists(self.upload_path)
+            for issue_tag_result in v:
+                for position in "top", "side":
+                    remote_path = f"{self.download_path}/{issue_tag_result.issue_code}/{position}/color.jpg"
+                    local_path = (f"{self.upload_path}/{issue_tag_result.tag_code}_color"
+                                  f"_{issue_tag_result.rotate}_{position}"
+                                  f"_{issue_tag_result.issue_code}.jpg")
+                    if self.ssh_client.is_exist(remote_path):
+                        coroutines.append(self.ssh_client.download(remote_path, local_path))
+        await asyncio.gather(*coroutines)
+        return "Done"
 
 
     async def download_and_upload_images(self):
@@ -67,7 +92,7 @@ class ExtractionToolApplication:
         6. 데이터 업로드
         """
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
-
+        #   요구사항은 변경되기 마련..
         await asyncio.gather(
             self._download_images(
                 target_date,
@@ -84,27 +109,25 @@ class ExtractionToolApplication:
         await self._validate_images(img_group)
 
 
-    def _get_image_group_by_date(self, target_date: dict, data_fetch_func: callable):
+    def _get_image_group_by_date(self, target_date: dict, data_fetch_func: callable) -> dict[str, list[IssueTagResult | Issue]]:
         img_group = {}
         for key in target_date:
             for day in target_date[key]:
-                issue = data_fetch_func(day)
-                img_group.setdefault(day, issue)
+                issues: list[IssueTagResult | Issue] = data_fetch_func(day)
+                img_group.setdefault(day, issues)
 
         return img_group
 
-    async def _validate_images(self, img_group: dict):
+    async def _validate_images(self, img_group: dict[str, list[Issue]]):
         coroutines = []
 
         for k, v in img_group.items():
-            if v:
-                local_path = f"input"
-                self.directory_util.make_directory_if_not_exists(local_path)
-                for issue_code, created_at in v:
-                    for position in "condition", "condition":
-                        remote_path = f"input"
-                        download_path = f"input"
-                        coroutines.append(self.ssh_client.download(remote_path, download_path))
+            if not v:
+                continue
+            self.directory_util.make_directory_if_not_exists(self.upload_path)
+            for issue_code, created_at in v:
+                for position in "none", "none":
+                    coroutines.append(self.ssh_client.download(self.download_path, self.upload_path))
 
         results = await asyncio.gather(*coroutines)
         for result in results:
@@ -277,15 +300,8 @@ if __name__ == '__main__':
         ssh_client=ssh,
         db_client=db
     )
-    target_info = {
-        "A": 500 ,
-        "C": 900,
-        "D": 850,
-        "E": 1750,
-        "G": 1700,
-        "Q": 250,
-        "N": 50,
-    }
-    application.find_target_tag_issue()
+
+
+
 
 
