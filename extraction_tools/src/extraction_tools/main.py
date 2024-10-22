@@ -187,83 +187,7 @@ class ExtractionToolApplication:
                 merge_rotate_group.setdefault(k, []).append(temp)
         return merge_rotate_group
 
-    def db_migration(self):
-        #   전체 이슈 데이터를 가져와서 이슈 태그 매치와 태그 데이터를 마이그레이션
-        #   매치가 되지않는 없는 데이터의 경우 제외
-        #   Exception Case: Tag는 바코드가 고유키라서 중복되면 안되는데 중복되는 케이스가 존재함.
-
-        #   전체 이슈 개수 가져오기
-        total_issue_count = self.db_client.get_all_issue_count()
-        for i in range(total_issue_count, 0, -1):
-            #   이슈 데이터 가져오기
-            issue: Issue = self.db_client.get_issue_by_id(id=i)
-            if not issue:
-                continue
-            #   이슈 태그 매치 데이터 가져오기
-            issue_tag_matchs: list[IssueTagMatch] = self.db_client.get_issue_tag_match_by_issue_code(issue.issue_code)
-            if not issue_tag_matchs:
-                continue
-            #   이슈 태그 매치와 매칭되는 태그 데이터 가져오기
-            for itm in issue_tag_matchs:
-                tag = self.db_client.get_tag_by_tag_code_or_barcode_or_link_barcode(itm.tag_code)
-                if not tag:
-                    continue
-                migration_entity: TagMigration = self.data_handling_util.migration_tag_entity(tag)
-                if not migration_entity:    # 데이터가 존재하는 케이스만 마이그레이션 대상.
-                    continue
-                #   Tag는 바코드가 고유키라서 중복되면 안되는데 중복되는 케이스가 존재함.
-                #   어떡하냐 ㅋㅋ
-                #   마이그레이션한 태그가 이미 존재한다면 새로운 값을 부여
-                if self.db_client.is_exist_migration_tag(tag=migration_entity):
-                    #   동일한 태그가 이미 등록 되었는지 확인, 식별자가 주석 밖에 없다 ㅠ...
-                    is_exist_tag: TagMigration = self.db_client.get_tag_by_description(migration_entity.description)
-                    #   동일한 태그가 존재하지 않는다면 새로운 태그 코드를 부여
-                    if not is_exist_tag:
-                        self._validation_migration_target(migration_entity, itm)
-                    else:
-                        new_itm = IssueTagMatchMigration(
-                            issue_code=itm.issue_code,
-                            tag_code=is_exist_tag.tag_code
-                        )
-                        self.db_client.save(is_exist_tag)
-                        self.db_client.save(new_itm)
-
-                else:
-                    #   마이그레이션한 태그가 존재하지 않는다면 마이그레이션 진행 후 저장
-                    new_itm = IssueTagMatchMigration(
-                        issue_code=itm.issue_code,
-                        tag_code=migration_entity.tag_code
-                    )
-                    self.db_client.save(migration_entity)
-                    self.db_client.save(new_itm)
-
-
-
-        print("Done!")
-    def _validation_migration_target(self,
-                                     tag: TagMigration,
-                                     itm: IssueTagMatch,
-                                     new_number: int = 9999,
-                                     ):
-        try:
-            new_tag_code = "-".join(tag.tag_code.split("-")[:-1] + [str(new_number)])
-            tag.tag_code = new_tag_code # 태그 코드 변경
-            tag.barcode = new_tag_code # 바코드 변경
-            self.db_client.save(tag)
-
-            new_itm = IssueTagMatchMigration(
-                issue_code=itm.issue_code,
-                tag_code=new_tag_code
-            )
-            self.db_client.save(new_itm)
-
-        except:
-            print(f"Exist Tag: {tag.tag_code}")
-            self._validation_migration_target(tag, itm, new_number - 1)
-
-    def test(self):
-        day_range = self.date_util.search_all_date(datetime(2024, 11, 1), datetime(2024, 12, 31))
-        return day_range
+# TODO: 리팩토링 부터 -> 구조 분해 -> 문제 이미지 추출 -> 문제 이미지 업로드 -> 문제 데이터 업로드
 
 if __name__ == '__main__':
     sys.setrecursionlimit(5000)
@@ -297,7 +221,7 @@ if __name__ == '__main__':
         ssh_client=ssh,
         db_client=db
     )
-    print(application.test())
+
 
 
 

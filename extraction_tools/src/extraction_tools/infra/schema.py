@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from enum import StrEnum, auto
 from typing import Optional
 
@@ -170,9 +170,33 @@ class ExamPaper(SQLModel):
     __tablename__ = 'exam_paper'
     seq: int = Field(primary_key=True, default=None)
     exam_id: str = Field(format='exam.id')
-
+    question_seq: int = Field(foreign_key='question.seq')
     created_at: datetime
+
+class ExamType(UpperStrEnum):
+    EXAM = auto()
+    MOCK_EXAM = auto()
+
 
 class Exam(SQLModel):
     __tablename__ = 'exam'
+    id: str = Field(primary_key=True)
+    end_date: datetime = Field(nullable=True)
+    start_date: datetime = Field(nullable=True)
+    time_limit: time
+    created_at: datetime
+    certification_seq: int = Field(foreign_key='certifacation.seq')
+    name_seq: int = Field(foreign_key='language.seq')
+    description_seq: int | None = Field(foreign_key='language.seq', nullable=True)
+    type: ExamType
+    reading_count: int = Field(nullable=True)
+    material_count: int = Field(nullable=True)
+    danger_count: int = Field(nullable=True)
+    total_count: int = Field(nullable=True)
+    report_opened_at: datetime | None = Field(nullable=True)
+    report_closed_at: datetime | None = Field(nullable=True)
+
+
+
+
 
