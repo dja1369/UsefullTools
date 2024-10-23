@@ -22,6 +22,15 @@ class ORM:
                 session.add(obj)
             session.commit()
 
+    def get_image_group_by_date(self, target_date: dict[str, list[date]], data_fetch_func: callable) -> dict[date, list[IssueTagResult | IssueCodeNTime | IssueLinkTagCode]]:
+        img_group = {}
+        for key in target_date:
+            for day in target_date[key]:
+                issues: list[IssueTagResult | IssueCodeNTime | IssueLinkTagCode] = data_fetch_func(day)
+                img_group.setdefault(day, issues)
+
+        return img_group
+
     def is_exist_migration_tag(self, tag: TagMigration):
         with Session(self._engine) as session:
             q = select(exists().where(TagMigration.tag_code == tag.tag_code))

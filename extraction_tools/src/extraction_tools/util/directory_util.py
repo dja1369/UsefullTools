@@ -11,7 +11,7 @@ class DirectoryUtil:
         if not os.path.exists(directory):
             os.makedirs(directory, exist_ok=True)
 
-    def end_file(self, path):
+    def make_end_file(self, path):
         filename = path + "/end"
         with open (filename, "a") as f:
             f.write("end")
