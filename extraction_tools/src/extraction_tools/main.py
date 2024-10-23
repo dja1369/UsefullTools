@@ -5,6 +5,7 @@ from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation, Is
     IssueLinkTagCode
 from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.infra.orm import ORM
+from src.extraction_tools.service.image_extract_service import ImageExtractService
 from src.extraction_tools.util.date_util import DateUtil
 from src.extraction_tools.util.directory_util import DirectoryUtil
 from src.extraction_tools.service.data_handling_service import DataHandlingService
@@ -15,6 +16,7 @@ class ExtractionToolApplication:
                  date_module: DateUtil,
                  data_handling_module: DataHandlingService,
                  img_upload_module: ImageUploadService,
+                 img_extract_module: ImageExtractService
                  ):
         '''
         DBClient: 데이터베이스와 연결하는 클래스,
@@ -27,6 +29,7 @@ class ExtractionToolApplication:
         self.upload_path = None
         self.data_handling_util = data_handling_module
         self.img_upload_service = img_upload_module
+        self.img_extract_service = img_extract_module
         self.date_util = date_module
 
     async def process_upload_all_sample_images(self):
@@ -56,6 +59,15 @@ class ExtractionToolApplication:
         # 누락된 샘플데이터 리스트를 엑셀로 추출
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
         self.data_handling_util.find_missing_sample(target_date)
+
+    def process_extract_exam_image(self):
+        target_question_seq: list[int] = []
+        self.img_extract_service.extract_all_sample_images(
+            target_question_seq,
+            self.download_path,
+            self.upload_path
+        )
+
 
 
 
@@ -96,6 +108,28 @@ if __name__ == '__main__':
         directory_util=directory_util,
         db_client=db
     )
+
+    exam_db_information = DatabaseInformation(
+        host_ip="ha",
+        user="ha",
+        password="ha",
+        db_name="ha",
+        port=0000
+    )
+    exam_db = ORM(
+        host=exam_db_information.host_ip,
+        db_user=exam_db_information.user,
+        db_password=exam_db_information.password,
+        db_name=exam_db_information.db_name,
+        port=exam_db_information.port,
+    )
+
+    image_extract_service = ImageExtractService(
+        db_client=exam_db,
+        directory_util=directory_util,
+        ssh_client=ssh
+    )
+
     data_handling_service = DataHandlingService(
         directory_util=directory_util,
         db_client=db

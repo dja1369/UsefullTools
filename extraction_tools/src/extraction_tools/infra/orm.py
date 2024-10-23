@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, date
+from typing import Any, Sequence
 
-from sqlalchemy import between, func, exists
+from sqlalchemy import between, func, exists, Row, RowMapping
 from sqlmodel import create_engine, Session, select, desc
 
 from src.extraction_tools.dto.Vo import IssueTagResult, IssueCodeNTime, IssueLinkTagCode
-from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration
+from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration, CategoryEnum, \
+    Question, Option, QuestionData
 
 
 class ORM:
@@ -188,5 +190,35 @@ class ORM:
             ).order_by(
                 desc(Issue.created_at)
             )
+            result = session.exec(q).fetchall()
+            return result
+
+    def get_question_data_by_question_seq(self, seq: int) -> QuestionData.image_id | None:
+        with Session(self._engine) as session:
+            q = select(
+                QuestionData.image_id
+            ).where(
+                QuestionData.question_seq == seq
+            )
+            result = session.exec(q).one_or_none()
+            return result
+
+    def get_all_question_by_type(self, category: CategoryEnum = None):
+        """
+        @param category: CategoryEnum (READING, MATERIAL, DANGER)
+        @return: list[Question.seq: int]
+        """
+        with Session(self._engine) as session:
+            q = select(
+                Question.seq
+            )
+            if category:
+                q = q.where(Question.category == category)
+            result = session.exec(q).fetchall()
+            return result
+
+    def get_options_by_question_seq(self, question_seq: int) -> list[Option]:
+        with Session(self._engine) as session:
+            q = select(Option).where(Option.question_seq == question_seq)
             result = session.exec(q).fetchall()
             return result
