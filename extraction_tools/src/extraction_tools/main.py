@@ -1,15 +1,14 @@
-import asyncio
-from datetime import datetime, date
+from datetime import datetime
 
-from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation, IssueTagResult, IssueCodeNTime, \
-    IssueLinkTagCode
 from src.extraction_tools.client.ssh_client import SSHClient
+from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation
 from src.extraction_tools.infra.orm import ORM
+from src.extraction_tools.service.data_handling_service import DataHandlingService
 from src.extraction_tools.service.image_extract_service import ImageExtractService
+from src.extraction_tools.service.image_upload_service import ImageUploadService
 from src.extraction_tools.util.date_util import DateUtil
 from src.extraction_tools.util.directory_util import DirectoryUtil
-from src.extraction_tools.service.data_handling_service import DataHandlingService
-from src.extraction_tools.service.image_upload_service import ImageUploadService
+
 
 class ExtractionToolApplication:
     def __init__(self,
@@ -41,7 +40,6 @@ class ExtractionToolApplication:
             self.upload_path
         )
 
-
     async def upload_all_package_images(self):
         # 기간내의 모든 패키지 이미지를 업로드
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
@@ -62,16 +60,18 @@ class ExtractionToolApplication:
 
     def process_extract_exam_image(self):
         target_question_seq: list[int] = []
-        self.img_extract_service.extract_all_sample_images(
+        self.img_extract_service.extract_target_questions_and_option_images(
             target_question_seq,
             self.download_path,
             self.upload_path
         )
 
-
+    def process_make_exam(self):
+        pass
 
 
 # TODO: 리팩토링 부터 -> 구조 분해 -> 문제 이미지 추출 -> 문제 이미지 업로드 -> 문제 데이터 업로드
+# TODO: 이미지 추출 완성 -> 시험 생성 개발
 
 if __name__ == '__main__':
     date_util = DateUtil()
@@ -140,8 +140,3 @@ if __name__ == '__main__':
         img_upload_module=image_upload_service,
         date_module=date_util,
     )
-
-
-
-
-

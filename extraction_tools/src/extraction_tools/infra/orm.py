@@ -6,7 +6,7 @@ from sqlmodel import create_engine, Session, select, desc
 
 from src.extraction_tools.dto.Vo import IssueTagResult, IssueCodeNTime, IssueLinkTagCode
 from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration, CategoryEnum, \
-    Question, Option, QuestionData
+    Question, Option, QuestionData, OptionData
 
 
 class ORM:
@@ -193,14 +193,14 @@ class ORM:
             result = session.exec(q).fetchall()
             return result
 
-    def get_question_data_by_question_seq(self, seq: int) -> QuestionData.image_id | None:
+    def get_question_data_img_id_by_question_seq(self, seq: int) -> Sequence[QuestionData.image_id]:
         with Session(self._engine) as session:
             q = select(
                 QuestionData.image_id
             ).where(
                 QuestionData.question_seq == seq
             )
-            result = session.exec(q).one_or_none()
+            result = session.exec(q).fetchall()
             return result
 
     def get_all_question_by_type(self, category: CategoryEnum = None):
@@ -217,8 +217,12 @@ class ORM:
             result = session.exec(q).fetchall()
             return result
 
-    def get_options_by_question_seq(self, question_seq: int) -> list[Option]:
+    def get_all_option_data_img_id_by_question_seq(self, question_seq: int) -> Sequence[Option]:
         with Session(self._engine) as session:
-            q = select(Option).where(Option.question_seq == question_seq)
+            q = select(
+                OptionData.image_id
+            ).join(
+                Option, OptionData.option_seq == Option.seq
+            ).where(Option.question_seq == question_seq)
             result = session.exec(q).fetchall()
             return result
