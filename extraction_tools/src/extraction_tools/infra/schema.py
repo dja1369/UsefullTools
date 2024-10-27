@@ -2,8 +2,7 @@ from datetime import datetime, time
 from enum import StrEnum, auto
 from typing import Optional
 
-from sqlalchemy import table
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 
 
 class Status(StrEnum):
@@ -138,6 +137,10 @@ class Question(SQLModel):
     made_by: str
     created_at: datetime
 
+    exam: "Exam" = Relationship(back_populates="question_list", link_model="ExamPaper")
+    questions_data: list["QuestionData"] | None = Relationship(back_populates="question", cascade_delete=True)
+    options: list["Option"] = Relationship(back_populates="question", cascade_delete=True)
+
 
 class QuestionData(SQLModel):
     __tablename__ = 'question_data'
@@ -147,6 +150,7 @@ class QuestionData(SQLModel):
     filter: str
     is_main_image: bool
     created_at: datetime
+    question: "Question" = Relationship(back_populates="question_data")
 
 
 class Option(SQLModel):
@@ -156,6 +160,9 @@ class Option(SQLModel):
     included_text_seq: int = Field(foreign_key='language.seq')
     created_at: datetime
 
+    question: "Question" = Relationship(back_populates="options")
+    option_data: list["OptionData"] = Relationship(back_populates="option", cascade_delete=True)
+
 
 class OptionData(SQLModel):
     __tablename__ = 'option_data'
@@ -164,14 +171,16 @@ class OptionData(SQLModel):
     image_id: str
     filter: str
     created_at: datetime
+    option: "Option" = Relationship(back_populates="option_data")
 
 
 class ExamPaper(SQLModel):
     __tablename__ = 'exam_paper'
     seq: int = Field(primary_key=True, default=None)
-    exam_id: str = Field(format='exam.id')
+    exam_id: str = Field(foreign_key='exam.id')
     question_seq: int = Field(foreign_key='question.seq')
     created_at: datetime
+
 
 class ExamType(UpperStrEnum):
     EXAM = auto()
@@ -196,7 +205,5 @@ class Exam(SQLModel):
     report_opened_at: datetime | None = Field(nullable=True)
     report_closed_at: datetime | None = Field(nullable=True)
 
-
-
-
-
+    question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper,
+                                                   cascade_delete=True)

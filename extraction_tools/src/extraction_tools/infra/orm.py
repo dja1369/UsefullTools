@@ -203,19 +203,20 @@ class ORM:
             result = session.exec(q).fetchall()
             return result
 
-    def get_all_question_by_type(self, category: CategoryEnum = None):
+    def get_all_question_by_type(self, session: Session, category: CategoryEnum = None) -> Sequence[Question]:
         """
+        @param session: Session Object from sqlmodel
         @param category: CategoryEnum (READING, MATERIAL, DANGER)
         @return: list[Question.seq: int]
         """
-        with Session(self._engine) as session:
-            q = select(
-                Question.seq
-            )
-            if category:
-                q = q.where(Question.category == category)
-            result = session.exec(q).fetchall()
-            return result
+        # with Session(self._engine) as session:
+        q = select(
+            Question
+        )
+        if category:
+            q = q.where(Question.category == category)
+        result = session.exec(q).fetchall()
+        return result
 
     def get_all_option_data_img_id_by_question_seq(self, question_seq: int) -> Sequence[Option]:
         with Session(self._engine) as session:

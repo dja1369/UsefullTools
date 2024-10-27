@@ -1,5 +1,5 @@
 import asyncio
-from typing import Sequence
+from typing import Sequence, Coroutine
 
 from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.infra.orm import ORM
@@ -15,7 +15,7 @@ class ImageExtractService:
 
     def extract_target_questions_and_option_images(self, target_question_seq: list[int], download_path: str,
                                                    upload_path: str):
-        coroutines = []
+        coroutines: list[Coroutine] = []
         for question_seq in target_question_seq:
             questions_image: Sequence[QuestionData.image_id] = self.db_client.get_question_data_img_id_by_question_seq(
                 question_seq)

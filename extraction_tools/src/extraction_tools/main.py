@@ -4,6 +4,7 @@ from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation
 from src.extraction_tools.infra.orm import ORM
 from src.extraction_tools.service.data_handling_service import DataHandlingService
+from src.extraction_tools.service.exam_build_service import ExamBuildService
 from src.extraction_tools.service.image_extract_service import ImageExtractService
 from src.extraction_tools.service.image_upload_service import ImageUploadService
 from src.extraction_tools.util.date_util import DateUtil
@@ -15,7 +16,8 @@ class ExtractionToolApplication:
                  date_module: DateUtil,
                  data_handling_module: DataHandlingService,
                  img_upload_module: ImageUploadService,
-                 img_extract_module: ImageExtractService
+                 img_extract_module: ImageExtractService,
+                 exam_build_module: ExamBuildService
                  ):
         '''
         DBClient: 데이터베이스와 연결하는 클래스,
@@ -30,6 +32,7 @@ class ExtractionToolApplication:
         self.img_upload_service = img_upload_module
         self.img_extract_service = img_extract_module
         self.date_util = date_module
+        self.exam_build_service = exam_build_module
 
     async def process_upload_all_sample_images(self):
         # 기간내의 모든 샘플 이미지를 업로드
@@ -66,12 +69,17 @@ class ExtractionToolApplication:
             self.upload_path
         )
 
+    def extract_exam_data(self):
+        """
+        시험 데이터 추출
+        문제, 문제 데이터, 옵션, 옵션 데이터 (시퀀스 빼고 모두 추출)
+        @return: None
+        """
+        self.exam_build_service.extract_exam_data()
+
     def process_make_exam(self):
         pass
 
-
-# TODO: 리팩토링 부터 -> 구조 분해 -> 문제 이미지 추출 -> 문제 이미지 업로드 -> 문제 데이터 업로드
-# TODO: 이미지 추출 완성 -> 시험 생성 개발
 
 if __name__ == '__main__':
     date_util = DateUtil()
@@ -133,6 +141,9 @@ if __name__ == '__main__':
     data_handling_service = DataHandlingService(
         directory_util=directory_util,
         db_client=db
+    )
+    exam_build_service = ExamBuildService(
+        db_client=exam_db
     )
 
     application = ExtractionToolApplication(
