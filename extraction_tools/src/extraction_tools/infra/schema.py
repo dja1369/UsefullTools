@@ -125,6 +125,39 @@ class TemplateEnum(UpperStrEnum):
     Q_TXT_OP_TXT_COLOR = auto()
     Q_TXT_IMG_OP_TXT_COLOR = auto()
 
+class ExamPaper(SQLModel, table=True):
+    __tablename__ = 'exam_paper'
+    seq: int = Field(primary_key=True, default=None)
+    exam_id: str = Field(foreign_key='exam.id')
+    question_seq: int = Field(foreign_key='question.seq')
+    created_at: datetime
+
+
+class ExamType(UpperStrEnum):
+    EXAM = auto()
+    MOCK_EXAM = auto()
+
+
+class Exam(SQLModel, table=True):
+    __tablename__ = 'exam'
+    id: str = Field(primary_key=True)
+    end_date: datetime = Field(nullable=True)
+    start_date: datetime = Field(nullable=True)
+    time_limit: time
+    created_at: datetime
+    certification_seq: int = Field(foreign_key='certifacation.seq')
+    name_seq: int = Field(foreign_key='language.seq')
+    description_seq: int | None = Field(foreign_key='language.seq', nullable=True)
+    type: ExamType
+    reading_count: int = Field(nullable=True)
+    material_count: int = Field(nullable=True)
+    danger_count: int = Field(nullable=True)
+    total_count: int = Field(nullable=True)
+    report_opened_at: datetime | None = Field(nullable=True)
+    report_closed_at: datetime | None = Field(nullable=True)
+
+    question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper,
+                                                   cascade_delete=True)
 
 class Question(SQLModel, table=True):
     __tablename__ = 'question'
@@ -138,7 +171,7 @@ class Question(SQLModel, table=True):
     made_by: str
     created_at: datetime
 
-    exam: "Exam" = Relationship(back_populates="question_list", link_model="ExamPaper")
+    exam: "Exam" = Relationship(back_populates="question_list", link_model=ExamPaper)
     questions_data: list["QuestionData"] | None = Relationship(back_populates="question", cascade_delete=True)
     options: list["Option"] = Relationship(back_populates="question", cascade_delete=True)
 
@@ -175,36 +208,4 @@ class OptionData(SQLModel, table=True):
     option: "Option" = Relationship(back_populates="option_data")
 
 
-class ExamPaper(SQLModel, table=True):
-    __tablename__ = 'exam_paper'
-    seq: int = Field(primary_key=True, default=None)
-    exam_id: str = Field(foreign_key='exam.id')
-    question_seq: int = Field(foreign_key='question.seq')
-    created_at: datetime
 
-
-class ExamType(UpperStrEnum):
-    EXAM = auto()
-    MOCK_EXAM = auto()
-
-
-class Exam(SQLModel, table=True):
-    __tablename__ = 'exam'
-    id: str = Field(primary_key=True)
-    end_date: datetime = Field(nullable=True)
-    start_date: datetime = Field(nullable=True)
-    time_limit: time
-    created_at: datetime
-    certification_seq: int = Field(foreign_key='certifacation.seq')
-    name_seq: int = Field(foreign_key='language.seq')
-    description_seq: int | None = Field(foreign_key='language.seq', nullable=True)
-    type: ExamType
-    reading_count: int = Field(nullable=True)
-    material_count: int = Field(nullable=True)
-    danger_count: int = Field(nullable=True)
-    total_count: int = Field(nullable=True)
-    report_opened_at: datetime | None = Field(nullable=True)
-    report_closed_at: datetime | None = Field(nullable=True)
-
-    question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper,
-                                                   cascade_delete=True)
