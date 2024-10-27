@@ -2,6 +2,7 @@ from datetime import datetime, time
 from enum import StrEnum, auto
 from typing import Optional
 
+from sqlalchemy import table
 from sqlmodel import SQLModel, Field, Relationship
 
 
@@ -82,7 +83,7 @@ class TagMigration(SQLModel, table=True):
     updated_at: datetime | None
 
 
-class Language(SQLModel):
+class Language(SQLModel, table=True):
     __tablename__ = 'language'
     seq: int = Field(primary_key=True, default=None)
     kr: str
@@ -101,7 +102,7 @@ class DifficultyEnum(UpperStrEnum):
     하 = auto()
 
 
-class Difficulty(SQLModel):
+class Difficulty(SQLModel, table=True):
     __tablename__ = 'difficulty'
     seq: int = Field(primary_key=True, default=None)
     name: DifficultyEnum
@@ -125,7 +126,7 @@ class TemplateEnum(UpperStrEnum):
     Q_TXT_IMG_OP_TXT_COLOR = auto()
 
 
-class Question(SQLModel):
+class Question(SQLModel, table=True):
     __tablename__ = 'question'
     seq: int = Field(primary_key=True, default=None)
     title_seq: int | None = Field(foreign_key='language.seq')
@@ -142,7 +143,7 @@ class Question(SQLModel):
     options: list["Option"] = Relationship(back_populates="question", cascade_delete=True)
 
 
-class QuestionData(SQLModel):
+class QuestionData(SQLModel, table=True):
     __tablename__ = 'question_data'
     seq: int = Field(primary_key=True, default=None)
     question_seq: int = Field(foreign_key='question.seq')
@@ -153,7 +154,7 @@ class QuestionData(SQLModel):
     question: "Question" = Relationship(back_populates="question_data")
 
 
-class Option(SQLModel):
+class Option(SQLModel, table=True):
     __tablename__ = 'option'
     seq: int = Field(primary_key=True, default=None)
     question_seq: int = Field(foreign_key='question.seq')
@@ -164,7 +165,7 @@ class Option(SQLModel):
     option_data: list["OptionData"] = Relationship(back_populates="option", cascade_delete=True)
 
 
-class OptionData(SQLModel):
+class OptionData(SQLModel, table=True):
     __tablename__ = 'option_data'
     seq: int = Field(primary_key=True, default=None)
     option_seq: int = Field(foreign_key='option.seq')
@@ -174,7 +175,7 @@ class OptionData(SQLModel):
     option: "Option" = Relationship(back_populates="option_data")
 
 
-class ExamPaper(SQLModel):
+class ExamPaper(SQLModel, table=True):
     __tablename__ = 'exam_paper'
     seq: int = Field(primary_key=True, default=None)
     exam_id: str = Field(foreign_key='exam.id')
@@ -187,7 +188,7 @@ class ExamType(UpperStrEnum):
     MOCK_EXAM = auto()
 
 
-class Exam(SQLModel):
+class Exam(SQLModel, table=True):
     __tablename__ = 'exam'
     id: str = Field(primary_key=True)
     end_date: datetime = Field(nullable=True)
