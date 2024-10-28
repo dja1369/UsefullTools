@@ -15,6 +15,7 @@ sqlalchemy = "^2.0.32"
 pandas = "^2.2.2"
 openpyxl = "^3.1.5"
 pydantic = "^2.9.2"
+python-dotenv = "^1.0.1"
 
 
 [build-system]

@@ -1,4 +1,6 @@
+import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 from src.extraction_tools.client.ssh_client import SSHClient
 from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation
@@ -69,13 +71,15 @@ class ExtractionToolApplication:
             self.upload_path
         )
 
-    def extract_exam_data(self):
+    def process_extract_exam_data(self):
         """
         시험 데이터 추출
         문제, 문제 데이터, 옵션, 옵션 데이터 (시퀀스 빼고 모두 추출)
         @return: None
         """
-        self.exam_build_service.extract_exam_data()
+        resp = self.exam_build_service.extract_exam_data()
+        with open("exam_data.json", "w") as f:
+            f.write(resp.model_dump_json())
 
     def process_make_exam(self):
         pass
@@ -84,10 +88,12 @@ class ExtractionToolApplication:
 if __name__ == '__main__':
     date_util = DateUtil()
     directory_util = DirectoryUtil()
+    load_dotenv()
+
     remote_host = HostInformation(
-        ip="host_ip",
-        name="host_name",
-        password="host_password"
+        ip=os.getenv("REMOTE_HOST_IP"),
+        name=os.getenv("REMOTE_HOST_NAME"),
+        password=os.getenv("REMOTE_HOST_PASSWORD")
     )
     ssh = SSHClient(
         host=remote_host.ip,
@@ -96,11 +102,11 @@ if __name__ == '__main__':
     )
 
     db_information = DatabaseInformation(
-        host_ip="ha",
-        user="ha",
-        password="ha",
-        db_name="ha",
-        port=0000
+        host_ip=os.getenv("DB_HOST_IP"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        db_name=os.getenv("DB_NAME"),
+        port=int(os.getenv("DB_PORT"))
     )
 
     db = ORM(
@@ -118,11 +124,11 @@ if __name__ == '__main__':
     )
 
     exam_db_information = DatabaseInformation(
-        host_ip="ha",
-        user="ha",
-        password="ha",
-        db_name="ha",
-        port=0000
+        host_ip=os.getenv("EXAM_DB_HOST_IP"),
+        user=os.getenv("EXAM_DB_USER"),
+        password=os.getenv("EXAM_DB_PASSWORD"),
+        db_name=os.getenv("EXAM_DB_NAME"),
+        port=int(os.getenv("EXAM_DB_PORT"))
     )
     exam_db = ORM(
         host=exam_db_information.host_ip,
@@ -150,4 +156,7 @@ if __name__ == '__main__':
         data_handling_module=data_handling_service,
         img_upload_module=image_upload_service,
         date_module=date_util,
+        img_extract_module=image_extract_service,
+        exam_build_module=exam_build_service
     )
+    application.process_extract_exam_data()

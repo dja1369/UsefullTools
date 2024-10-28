@@ -156,8 +156,7 @@ class Exam(SQLModel, table=True):
     report_opened_at: datetime | None = Field(nullable=True)
     report_closed_at: datetime | None = Field(nullable=True)
 
-    question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper,
-                                                   cascade_delete=True)
+    question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper)
 
 class Question(SQLModel, table=True):
     __tablename__ = 'question'
@@ -175,6 +174,9 @@ class Question(SQLModel, table=True):
     questions_data: list["QuestionData"] | None = Relationship(back_populates="question", cascade_delete=True)
     options: list["Option"] = Relationship(back_populates="question", cascade_delete=True)
 
+    title: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Question.title_seq==Language.seq"})
+    solution: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Question.solution_seq==Language.seq"})
+    difficulty: "Difficulty" = Relationship(sa_relationship_kwargs={"primaryjoin": "Question.difficulty_seq==Difficulty.seq"})
 
 class QuestionData(SQLModel, table=True):
     __tablename__ = 'question_data'
@@ -184,7 +186,7 @@ class QuestionData(SQLModel, table=True):
     filter: str
     is_main_image: bool
     created_at: datetime
-    question: "Question" = Relationship(back_populates="question_data")
+    question: "Question" = Relationship(back_populates="questions_data")
 
 
 class Option(SQLModel, table=True):
@@ -195,7 +197,8 @@ class Option(SQLModel, table=True):
     created_at: datetime
 
     question: "Question" = Relationship(back_populates="options")
-    option_data: list["OptionData"] = Relationship(back_populates="option", cascade_delete=True)
+    option_data: "OptionData" = Relationship(back_populates="option", cascade_delete=True)
+    included_text: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Option.included_text_seq==Language.seq"})
 
 
 class OptionData(SQLModel, table=True):

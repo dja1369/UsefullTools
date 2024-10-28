@@ -2,6 +2,9 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from src.extraction_tools.infra.schema import CategoryEnum, TemplateEnum
+
+
 class HostInformation(BaseModel):
     ip: str
     name: str
@@ -29,3 +32,36 @@ class IssueLinkTagCode(BaseModel):
     rotate: int
     package_link: str | None
     tag_code: str
+
+class LanguageVo(BaseModel):
+    name: str | None
+
+class DifficultyVo(BaseModel):
+    name: str
+
+
+class QuestionDataVo(BaseModel):
+    image_id: str
+    filter_name: str
+    is_main_image: bool
+
+
+class OptionVo(BaseModel):
+    include_text: LanguageVo | None
+    option_data: list[QuestionDataVo] | list
+
+
+class QuestionVo(BaseModel):
+    title: LanguageVo | None
+    category: CategoryEnum
+    template: TemplateEnum
+    difficulty: DifficultyVo
+    correct_answer: OptionVo
+    solution: LanguageVo
+    question_data: list[QuestionDataVo]
+    options: list[OptionVo]
+
+
+
+class ExamDataVo(BaseModel):
+    questions: list[QuestionVo]
