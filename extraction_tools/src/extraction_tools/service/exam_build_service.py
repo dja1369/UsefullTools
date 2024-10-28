@@ -51,10 +51,9 @@ class ExamBuildService:
                 QuestionDataVo(
                     image_id=data.image_id,
                     filter_name=data.filter,
-                    is_main_image=True if data.is_main_image == 1 else False
+                    is_main_image=data.is_main_image
                 )
             )
-        print(result)
         return result
     def extract_exam_data(self):
         result = []

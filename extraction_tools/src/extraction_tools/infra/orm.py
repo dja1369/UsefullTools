@@ -212,9 +212,7 @@ class ORM:
         # with Session(self._engine) as session:
         q = select(
             Question
-        ).where(
-            Question.created_at > '2024-10-01 00:00:00'
-        ).limit(10)
+        )
         if category:
             q = q.where(Question.category == category)
         result = session.exec(q).fetchall()

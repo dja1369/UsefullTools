@@ -78,7 +78,7 @@ class ExtractionToolApplication:
         @return: None
         """
         resp = self.exam_build_service.extract_exam_data()
-        with open("exam_data.json", "w") as f:
+        with open("exam_data.json", "w", encoding="utf-8") as f:
             f.write(resp.model_dump_json())
 
     def process_make_exam(self):
