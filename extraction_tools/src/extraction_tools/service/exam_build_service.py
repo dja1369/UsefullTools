@@ -20,9 +20,9 @@ class ExamBuildService:
                     ) or None,
                     option_data=QuestionDataVo(
                         image_id=option.option_data.image_id,
-                        filter_name=option.option_data.filter_name,
+                        filter_name=option.option_data.filter,
                         is_main_image=False
-                    )
+                    ) if option.option_data else None
                 )
 
     def option_mapper(self, options: Sequence[Option]):
@@ -35,9 +35,9 @@ class ExamBuildService:
                 ),
                 option_data=QuestionDataVo(
                         image_id=option.option_data.image_id,
-                        filter_name=option.option_data.filter_name,
+                        filter_name=option.option_data.filter,
                         is_main_image=False
-                )
+                ) if option.option_data else None
             )
             for option in options
         ]
@@ -47,14 +47,14 @@ class ExamBuildService:
         if not question_data:
             return []
         for data in question_data:
-            print(f"question_data_mapper: {data}")
             result.append(
                 QuestionDataVo(
                     image_id=data.image_id,
                     filter_name=data.filter,
-                    is_main_image=data.is_main_image
+                    is_main_image=True if data.is_main_image == 1 else False
                 )
             )
+        print(result)
         return result
     def extract_exam_data(self):
         result = []
