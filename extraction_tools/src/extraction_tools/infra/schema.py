@@ -197,7 +197,7 @@ class Option(SQLModel, table=True):
     created_at: datetime
 
     question: "Question" = Relationship(back_populates="options")
-    option_data: list["OptionData"] = Relationship(back_populates="option", cascade_delete=True)
+    option_data: "OptionData" = Relationship(back_populates="option", cascade_delete=True)
     included_text: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Option.included_text_seq==Language.seq"})
 
 

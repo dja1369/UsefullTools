@@ -18,15 +18,13 @@ class ExamBuildService:
                     include_text=LanguageVo(
                         name=option.included_text.kr if option.included_text else None
                     ) or None,
-                    option_data=[
-                        QuestionDataVo(
-                            image_id=option_data.image_id,
-                            filter_name=option_data.filter,
-                            is_main_image=option_data.is_main_image
-                        )
-                        for option_data in option.option_data
-                    ] if option.option_data else []
+                    option_data=QuestionDataVo(
+                        image_id=option.option_data.image_id,
+                        filter_name=option.option_data.filter_name,
+                        is_main_image=False
+                    )
                 )
+
     def option_mapper(self, options: Sequence[Option]):
         if not options:
             return []
@@ -35,14 +33,11 @@ class ExamBuildService:
                 include_text=LanguageVo(
                     name=option.included_text.kr if option.included_text else None
                 ),
-                option_data=[
-                    QuestionDataVo(
-                        image_id=option_data.image_id,
-                        filter_name=option_data.filter_name,
-                        is_main_image=option_data.is_main_image if option_data.is_main_image else False
-                    )
-                    for option_data in option.option_data
-                ] if option.option_data else []
+                option_data=QuestionDataVo(
+                        image_id=option.option_data.image_id,
+                        filter_name=option.option_data.filter_name,
+                        is_main_image=False
+                )
             )
             for option in options
         ]

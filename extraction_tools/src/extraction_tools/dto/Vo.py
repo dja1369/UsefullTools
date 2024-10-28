@@ -48,7 +48,7 @@ class QuestionDataVo(BaseModel):
 
 class OptionVo(BaseModel):
     include_text: LanguageVo | None
-    option_data: list[QuestionDataVo] | list
+    option_data: QuestionDataVo | None
 
 
 class QuestionVo(BaseModel):
