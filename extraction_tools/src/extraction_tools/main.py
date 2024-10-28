@@ -85,6 +85,7 @@ class ExtractionToolApplication:
         pass
 
 
+
 if __name__ == '__main__':
     date_util = DateUtil()
     directory_util = DirectoryUtil()

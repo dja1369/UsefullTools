@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from src.extraction_tools.dto.Vo import QuestionVo, QuestionDataVo, LanguageVo, DifficultyVo, OptionVo, ExamDataVo
 from src.extraction_tools.infra.orm import ORM
@@ -39,7 +39,7 @@ class ExamBuildService:
                     QuestionDataVo(
                         image_id=option_data.image_id,
                         filter_name=option_data.filter_name,
-                        is_main_image=option_data.is_main_image
+                        is_main_image=option_data.is_main_image if option_data.is_main_image else False
                     )
                     for option_data in option.option_data
                 ] if option.option_data else []
@@ -47,7 +47,20 @@ class ExamBuildService:
             for option in options
         ]
 
-
+    def question_data_mapper(self, question_data):
+        result = []
+        if not question_data:
+            return []
+        for data in question_data:
+            print(f"question_data_mapper: {data}")
+            result.append(
+                QuestionDataVo(
+                    image_id=data.image_id,
+                    filter_name=data.filter,
+                    is_main_image=data.is_main_image
+                )
+            )
+        return result
     def extract_exam_data(self):
         result = []
         with Session(self.db_client._engine) as session:
@@ -67,14 +80,7 @@ class ExamBuildService:
                         solution=LanguageVo(
                             name=obj.solution.kr
                         ),
-                        question_data=[
-                            QuestionDataVo(
-                                image_id=question_data.image_id,
-                                filter_name=question_data.filter,
-                                is_main_image=question_data.is_main_image
-                            )
-                            for question_data in obj.questions_data
-                        ] if obj.questions_data else [],
+                        question_data=self.question_data_mapper(obj.questions_data),
                         options=self.option_mapper(obj.options)
                     )
                 )
