@@ -64,9 +64,7 @@ class ExtractionToolApplication:
         self.data_handling_util.find_missing_sample(target_date)
 
     def process_extract_exam_image(self):
-        target_question_seq: list[int] = []
         self.img_extract_service.extract_target_questions_and_option_images(
-            target_question_seq,
             self.download_path,
             self.upload_path
         )
@@ -77,9 +75,12 @@ class ExtractionToolApplication:
         문제, 문제 데이터, 옵션, 옵션 데이터 (시퀀스 빼고 모두 추출)
         @return: None
         """
-        resp = self.exam_build_service.extract_exam_data()
-        with open("exam_data.json", "w", encoding="utf-8") as f:
-            f.write(resp.model_dump_json())
+        self.img_extract_service.extract_target_questions_and_option_images(
+
+        )
+        # resp = self.exam_build_service.extract_exam_data()
+        # with open("exam_data.json", "w", encoding="utf-8") as f:
+        #     f.write(resp.model_dump_json())
 
     def process_make_exam(self):
         pass

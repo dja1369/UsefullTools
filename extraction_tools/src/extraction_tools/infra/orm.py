@@ -203,6 +203,12 @@ class ORM:
             result = session.exec(q).fetchall()
             return result
 
+    def get_all_question_seq(self):
+        with Session(self._engine) as session:
+            q = select(Question.seq)
+            result = session.exec(q).fetchall()
+            return result
+
     def get_all_question_by_type(self, session: Session, category: CategoryEnum = None) -> Sequence[Question]:
         """
         @param session: Session Object from sqlmodel

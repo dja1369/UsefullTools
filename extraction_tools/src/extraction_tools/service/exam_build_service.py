@@ -80,6 +80,7 @@ class ExamBuildService:
                 )
         return ExamDataVo(questions=result)
 
+
     def make_mock_exam(self):
         # 모의고사 생성
         """
