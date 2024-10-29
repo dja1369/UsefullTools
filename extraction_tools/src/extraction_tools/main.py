@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from dotenv import load_dotenv
@@ -63,8 +64,8 @@ class ExtractionToolApplication:
         target_date = self.date_util.search_all_date(datetime(2023, 1, 1), datetime(2024, 8, 31))
         self.data_handling_util.find_missing_sample(target_date)
 
-    def process_extract_exam_image(self):
-        self.img_extract_service.extract_target_questions_and_option_images(
+    async def process_extract_exam_image(self):
+        await self.img_extract_service.extract_target_questions_and_option_images(
             self.download_path,
             self.upload_path
         )
@@ -75,12 +76,9 @@ class ExtractionToolApplication:
         문제, 문제 데이터, 옵션, 옵션 데이터 (시퀀스 빼고 모두 추출)
         @return: None
         """
-        self.img_extract_service.extract_target_questions_and_option_images(
-
-        )
-        # resp = self.exam_build_service.extract_exam_data()
-        # with open("exam_data.json", "w", encoding="utf-8") as f:
-        #     f.write(resp.model_dump_json())
+        resp = self.exam_build_service.extract_exam_data()
+        with open("exam_data.json", "w", encoding="utf-8") as f:
+            f.write(resp.model_dump_json())
 
     def process_make_exam(self):
         pass
@@ -161,4 +159,5 @@ if __name__ == '__main__':
         img_extract_module=image_extract_service,
         exam_build_module=exam_build_service
     )
-    application.process_extract_exam_data()
+    asyncio.run(application.process_extract_exam_image())
+    # application.process_extract_exam_data()

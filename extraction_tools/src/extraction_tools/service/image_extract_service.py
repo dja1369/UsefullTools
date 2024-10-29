@@ -13,7 +13,7 @@ class ImageExtractService:
         self.directory_util = directory_util
         self.ssh_client = ssh_client
 
-    def extract_target_questions_and_option_images(self, download_path: str, upload_path: str):
+    async def extract_target_questions_and_option_images(self, download_path: str, upload_path: str):
         coroutines: list[Coroutine] = []
         target_question_seq = self.db_client.get_all_question_seq()
         for question_seq in target_question_seq:
@@ -21,7 +21,7 @@ class ImageExtractService:
                 question_seq)
             if not questions_image:
                 continue
-            options_image: Sequence[Option] = self.db_client.get_all_option_data_img_id_by_question_seq(question_seq)
+            options_image: Sequence[str] = self.db_client.get_all_option_data_img_id_by_question_seq(question_seq)
             if not options_image:
                 continue
             for question_image in questions_image:
@@ -32,10 +32,12 @@ class ImageExtractService:
                         img_id=question_image)
                 )
             for option_image in options_image:
+                if option_image.endswith("Chip"):
+                    continue
                 coroutines.append(
                     self.ssh_client.folder_download(
                         remote_path=f"{download_path}",
                         local_path=f"{upload_path}",
-                        img_id=option_image.image_id)
+                        img_id=option_image)
                 )
-        asyncio.gather(*coroutines)
+        await asyncio.gather(*coroutines)

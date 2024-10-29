@@ -224,7 +224,7 @@ class ORM:
         result = session.exec(q).fetchall()
         return result
 
-    def get_all_option_data_img_id_by_question_seq(self, question_seq: int) -> Sequence[Option]:
+    def get_all_option_data_img_id_by_question_seq(self, question_seq: int) -> Sequence[str]:
         with Session(self._engine) as session:
             q = select(
                 OptionData.image_id
