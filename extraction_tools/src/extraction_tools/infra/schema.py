@@ -2,7 +2,6 @@ from datetime import datetime, time
 from enum import StrEnum, auto
 from typing import Optional
 
-from sqlalchemy import table
 from sqlmodel import SQLModel, Field, Relationship
 
 
@@ -13,6 +12,7 @@ class Status(StrEnum):
 
 
 class Issue(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     issue_code: str = Field()
     difficulty: int
@@ -34,15 +34,9 @@ class IssueTagMatch(SQLModel, table=True):
     tag_code: str = Field(index=True)
 
 
-class IssueTagMatchMigration(SQLModel, table=True):
-    __tablename__ = "issuetagmatch_migration"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    issue_code: str = Field(index=True)
-    tag_code: str = Field(index=True)
-
-
 class TagLite(SQLModel, table=True):
     __tablename__ = "tag"
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     tag_code: str
     tag_name: str
@@ -53,22 +47,6 @@ class TagLite(SQLModel, table=True):
 class TagFull(SQLModel, table=True):
     __tablename__ = "tag"
     __table_args__ = {"extend_existing": True}
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    tag_code: str
-    tag_name: str
-    description: str
-    barcode: str = Field(index=True)
-    link_barcode: str
-    tag_type: str
-    obj_type: str
-    battery_code: str
-    created_at: datetime
-    updated_at: datetime | None
-
-
-class TagMigration(SQLModel, table=True):
-    __tablename__ = "tag_migration"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     tag_code: str
@@ -125,6 +103,7 @@ class TemplateEnum(UpperStrEnum):
     Q_TXT_OP_TXT_COLOR = auto()
     Q_TXT_IMG_OP_TXT_COLOR = auto()
 
+
 class ExamPaper(SQLModel, table=True):
     __tablename__ = 'exam_paper'
     seq: int = Field(primary_key=True, default=None)
@@ -156,7 +135,8 @@ class Exam(SQLModel, table=True):
     report_opened_at: datetime | None = Field(nullable=True)
     report_closed_at: datetime | None = Field(nullable=True)
 
-    question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper)
+    # question_list: list["Question"] = Relationship(back_populates="exam", link_model=ExamPaper)
+
 
 class Question(SQLModel, table=True):
     __tablename__ = 'question'
@@ -170,13 +150,15 @@ class Question(SQLModel, table=True):
     made_by: str
     created_at: datetime
 
-    exam: "Exam" = Relationship(back_populates="question_list", link_model=ExamPaper)
+    # exam: "Exam" = Relationship(back_populates="question_list", link_model=ExamPaper)
     questions_data: list["QuestionData"] | None = Relationship(back_populates="question", cascade_delete=True)
     options: list["Option"] = Relationship(back_populates="question", cascade_delete=True)
 
     title: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Question.title_seq==Language.seq"})
     solution: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Question.solution_seq==Language.seq"})
-    difficulty: "Difficulty" = Relationship(sa_relationship_kwargs={"primaryjoin": "Question.difficulty_seq==Difficulty.seq"})
+    difficulty: "Difficulty" = Relationship(
+        sa_relationship_kwargs={"primaryjoin": "Question.difficulty_seq==Difficulty.seq"})
+
 
 class QuestionData(SQLModel, table=True):
     __tablename__ = 'question_data'
@@ -198,7 +180,8 @@ class Option(SQLModel, table=True):
 
     question: "Question" = Relationship(back_populates="options")
     option_data: "OptionData" = Relationship(back_populates="option", cascade_delete=True)
-    included_text: "Language" = Relationship(sa_relationship_kwargs={"primaryjoin": "Option.included_text_seq==Language.seq"})
+    included_text: "Language" = Relationship(
+        sa_relationship_kwargs={"primaryjoin": "Option.included_text_seq==Language.seq"})
 
 
 class OptionData(SQLModel, table=True):
@@ -209,6 +192,3 @@ class OptionData(SQLModel, table=True):
     filter: str
     created_at: datetime
     option: "Option" = Relationship(back_populates="option_data")
-
-
-

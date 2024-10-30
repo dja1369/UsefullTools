@@ -1,10 +1,11 @@
 import asyncio
+import json
 import os
 from datetime import datetime
 from dotenv import load_dotenv
 
 from src.extraction_tools.client.ssh_client import SSHClient
-from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation
+from src.extraction_tools.dto.Vo import HostInformation, DatabaseInformation, ExamDataVo
 from src.extraction_tools.infra.orm import ORM
 from src.extraction_tools.service.data_handling_service import DataHandlingService
 from src.extraction_tools.service.exam_build_service import ExamBuildService
@@ -80,8 +81,16 @@ class ExtractionToolApplication:
         with open("exam_data.json", "w", encoding="utf-8") as f:
             f.write(resp.model_dump_json())
 
-    def process_make_exam(self):
-        pass
+    def process_merge_exam_data(self):
+        with open("exam_data.json", "r", encoding="utf-8") as f:
+            data = ExamDataVo.model_validate_json(f.read())
+            self.exam_build_service.merge_exam_data(data)
+
+    def process_clean_exam_data(self):
+        self.exam_build_service.clean_exam_data()
+
+    def process_build_exam(self):
+        self.exam_build_service.make_mock_exam()
 
 
 
@@ -159,5 +168,6 @@ if __name__ == '__main__':
         img_extract_module=image_extract_service,
         exam_build_module=exam_build_service
     )
-    asyncio.run(application.process_extract_exam_image())
-    # application.process_extract_exam_data()
+    # application.process_merge_exam_data()
+    # application.process_clean_exam_data()
+    application.process_build_exam()

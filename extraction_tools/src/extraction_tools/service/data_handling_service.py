@@ -1,11 +1,9 @@
-import os
 import re
 import shutil
 
 import pandas as pd
 
 from src.extraction_tools.infra.orm import ORM
-from src.extraction_tools.infra.schema import TagFull, TagMigration
 from src.extraction_tools.util.directory_util import DirectoryUtil
 
 

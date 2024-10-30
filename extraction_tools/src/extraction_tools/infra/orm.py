@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta, date
-from typing import Any, Sequence
+from typing import Sequence
 
-from sqlalchemy import between, func, exists, Row, RowMapping
+from sqlalchemy import between, func, exists
 from sqlmodel import create_engine, Session, select, desc
 
 from src.extraction_tools.dto.Vo import IssueTagResult, IssueCodeNTime, IssueLinkTagCode
-from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, TagMigration, CategoryEnum, \
-    Question, Option, QuestionData, OptionData
+from src.extraction_tools.infra.schema import Issue, IssueTagMatch, TagLite, TagFull, CategoryEnum, \
+    Question, Option, QuestionData, OptionData, Difficulty
 
 
 class ORM:
@@ -32,22 +32,6 @@ class ORM:
                 img_group.setdefault(day, issues)
 
         return img_group
-
-    def is_exist_migration_tag(self, tag: TagMigration):
-        with Session(self._engine) as session:
-            q = select(exists().where(TagMigration.tag_code == tag.tag_code))
-            return session.exec(q).one()
-
-    def get_tag_by_description(self, description: str):
-        with Session(self._engine) as session:
-            q = select(TagMigration).where(TagMigration.description == description)
-            result = session.exec(q).fetchall()
-            if result.__len__() > 2:
-                print('result:', result)
-            if result:
-                return result[-1]
-            else:
-                return None
 
     def get_package_data_by_created_at_range(self, day: datetime) -> list[IssueCodeNTime]:
         with (Session(self._engine) as session):
@@ -231,5 +215,17 @@ class ORM:
             ).join(
                 Option, OptionData.option_seq == Option.seq
             ).where(Option.question_seq == question_seq)
+            result = session.exec(q).fetchall()
+            return result
+
+    def get_difficulty_by_name(self, session, name: str) -> Difficulty:
+        # with Session(self._engine) as session:
+        q = select(Difficulty).where(Difficulty.name == name)
+        result = session.exec(q).one_or_none()
+        return result
+
+    def get_all_question_by_seq_in(self, seq_list: list[int]):
+        with Session(self._engine) as session:
+            q = select(Question).where(Question.seq.in_(seq_list))
             result = session.exec(q).fetchall()
             return result

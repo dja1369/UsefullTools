@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from src.extraction_tools.infra.schema import CategoryEnum, TemplateEnum
+from src.extraction_tools.infra.schema import CategoryEnum, TemplateEnum, Question
 
 
 class HostInformation(BaseModel):
@@ -62,6 +62,17 @@ class QuestionVo(BaseModel):
     options: list[OptionVo]
 
 
-
 class ExamDataVo(BaseModel):
     questions: list[QuestionVo]
+
+
+class ExamPaperVo(BaseModel):
+    class QuestionPaperVo(BaseModel):
+        high_count: int = 0
+        middle_count: int = 0
+        low_count: int = 0
+        question: list[Question] = []
+
+    READING: QuestionPaperVo | None = QuestionPaperVo()
+    MATERIAL: QuestionPaperVo | None = QuestionPaperVo()
+    DANGER: QuestionPaperVo | None = QuestionPaperVo()
